@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Paperclip, SendHorizontal, Smile } from '@lucide/svelte';
+  import { Mic, Paperclip, SendHorizontal, Smile, X } from '@lucide/svelte';
   import * as InputGroup from '$lib/components/ui/input-group';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { onMount, tick } from 'svelte';
@@ -98,6 +98,122 @@
   let files = $state<ArrayBuffer[]>([]);
 
   let pendingFileType: 'image' | 'video' | 'file' | null = null;
+
+  let isRecording = $state(false);
+  let mediaRecorder: MediaRecorder | null = null;
+  let audioContext: AudioContext | null = null;
+  let analyserNode: AnalyserNode | null = null;
+  let mediaStream: MediaStream | null = null;
+  let audioChunks: Blob[] = [];
+  let animationFrameId: number | null = null;
+  let shouldSave = $state(true);
+  let recordingStart = $state(0);
+  let elapsed = $state(0);
+  let visualizerWidth = $state(0);
+  const BAR_WIDTH = 5;
+  const BAR_GAP = 2;
+  let numBars = $derived(
+    visualizerWidth > 0 ? Math.max(1, Math.floor(visualizerWidth / (BAR_WIDTH + BAR_GAP))) : 0
+  );
+
+  let phase = $state(0);
+  let lastTimestamp = 0;
+  const BASE_SPEED = 1.5;
+  const SPEED_MULTIPLIER = 50;
+  const BAR_SPACING = 0.5;
+
+  let bars = $derived(
+    numBars
+      ? Array.from({ length: numBars }, (_, i) => {
+          const center = (numBars - 1) / 2;
+          const sigma = numBars / 4;
+          const gaussian = Math.exp(-0.5 * ((i - center) / sigma) ** 2);
+          const sine = Math.sin(phase + (i - center) * BAR_SPACING);
+          return Math.max(5, (sine * 0.5 + 0.5) * gaussian * 100);
+        })
+      : []
+  );
+
+  function startRecording() {
+    navigator.mediaDevices
+      .getUserMedia({ audio: true })
+      .then((stream) => {
+        mediaStream = stream;
+        audioContext = new AudioContext();
+        const source = audioContext.createMediaStreamSource(stream);
+        analyserNode = audioContext.createAnalyser();
+        analyserNode.fftSize = 128;
+        source.connect(analyserNode);
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) audioChunks.push(e.data);
+        };
+        mediaRecorder.onstop = async () => {
+          if (shouldSave && audioChunks.length) {
+            const blob = new Blob(audioChunks, { type: 'audio/webm' });
+            const buffer = await blob.arrayBuffer();
+            files = [buffer];
+            fileCount = 1;
+          }
+          cleanupRecording();
+        };
+        mediaRecorder.start();
+        recordingStart = Date.now();
+        isRecording = true;
+        function tick(timestamp: number) {
+          if (!analyserNode) return;
+          const dt = lastTimestamp ? (timestamp - lastTimestamp) / 1000 : 0.016;
+          lastTimestamp = timestamp;
+
+          elapsed = Date.now() - recordingStart;
+          if (elapsed >= 300000) {
+            shouldSave = true;
+            mediaRecorder?.stop();
+            return;
+          }
+
+          const buf = new Uint8Array(analyserNode.fftSize);
+          analyserNode.getByteTimeDomainData(buf);
+          let sum = 0;
+          for (let i = 0; i < buf.length; i++) {
+            const d = (buf[i] - 128) / 128;
+            sum += d * d;
+          }
+          const rms = Math.sqrt(sum / buf.length);
+          const speed = BASE_SPEED + rms * SPEED_MULTIPLIER;
+          phase = (phase + dt * speed) % (2 * Math.PI);
+
+          animationFrameId = requestAnimationFrame(tick);
+        }
+        tick(0);
+      })
+      .catch(() => {});
+  }
+
+  function stopRecording() {
+    shouldSave = true;
+    mediaRecorder?.stop();
+  }
+
+  function cancelRecording() {
+    shouldSave = false;
+    mediaRecorder?.stop();
+  }
+
+  function cleanupRecording() {
+    if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
+    mediaStream?.getTracks().forEach((t) => t.stop());
+    audioContext?.close();
+    audioContext = null;
+    analyserNode = null;
+    mediaRecorder = null;
+    mediaStream = null;
+    animationFrameId = null;
+    isRecording = false;
+    lastTimestamp = 0;
+    recordingStart = 0;
+  }
   let fontFamily = $derived(
     textarea
       ? `${getComputedStyle(textarea).fontSize} ${getComputedStyle(textarea).fontFamily}`
@@ -215,87 +331,132 @@
     <p>{fileCount} file selected</p>
   {/if}
   <InputGroup.Root class="items-end bg-sidebar shadow-sm backdrop-blur-md [--spacing:0.3rem]">
-    <InputGroup.Textarea
-      rows={1}
-      class="self-top my-1 min-h-0 resize-none overflow-hidden p-1"
-      placeholder="Write your message"
-      onkeydown={onKeydown}
-      bind:ref={textarea}
-      bind:value
-      dir="auto"
-    />
+    {#if isRecording}
+      <div
+        bind:clientWidth={visualizerWidth}
+        class="flex h-full w-0 grow items-center justify-center p-2"
+      >
+        <div class="flex h-full w-full items-end gap-0.5">
+          {#each bars as bar}
+            <div class="w-1.25 rounded-full bg-accent-foreground/80" style="height: {bar}%"></div>
+          {/each}
+        </div>
+      </div>
+    {:else}
+      <InputGroup.Textarea
+        rows={1}
+        class="self-top my-1 min-h-0 resize-none overflow-hidden p-1"
+        placeholder="Write your message"
+        onkeydown={onKeydown}
+        bind:ref={textarea}
+        bind:value
+        dir="auto"
+      />
+    {/if}
 
     <InputGroup.Addon class="flex-wrap gap-0" bind:ref={action_buttons}>
-      <!-- ====== Virtual scrolled emoji picker ====== -->
-      <Popover.Root bind:open={emojiPickerOpen}>
-        <Popover.Trigger>
-          <InputGroup.Button>
-            <Smile />
-          </InputGroup.Button>
-        </Popover.Trigger>
-        <Popover.Content class="w-70 sm:w-80 p-0 left-1/2" side="top" align="start">
-          <!-- Search input -->
-          <div class="border-b px-3 py-2">
-            <input
-              type="text"
-              placeholder="Search emoji..."
-              class="w-full bg-transparent text-sm outline-none"
-              bind:this={emojiSearch}
-              oninput={updateEmojiFilter}
-            />
-          </div>
-
-          <!-- Virtual scroll container -->
-          <div
-            bind:this={emojiContainer}
-            style="height: {CONTAINER_HEIGHT}px; overflow-y: auto; contain: strict;"
-            class="p-1"
-            onscroll={onEmojiScroll}
-          >
-            <div style="height: {totalRows * ITEM_SIZE}px; position: relative;">
-              {#each visibleEmojis as emoji, index}
-                {@const globalIndex = startRow * COLUMNS + index}
-                {@const row = Math.floor(globalIndex / COLUMNS)}
-                {@const col = globalIndex % COLUMNS}
-                <button
-                  type="button"
-                  style="position: absolute; left: {col * (100 / COLUMNS)}%; width: {100 /
-                    COLUMNS}%; top: {row * ITEM_SIZE}px; height: {ITEM_SIZE}px;"
-                  class="flex items-center justify-center rounded-md text-xl select-none hover:bg-accent focus:bg-accent"
-                  onclick={() => insertEmoji(emoji.native)}
-                  title={emoji.name}
-                >
-                  {emoji.native}
-                </button>
-              {/each}
+      {#if isRecording}
+        <InputGroup.Button onclick={cancelRecording}>
+          <X />
+        </InputGroup.Button>
+        <span class="px-2 text-sm text-foreground tabular-nums"
+          >{Math.floor(elapsed / 60000)}:{String(Math.floor((elapsed % 60000) / 1000)).padStart(
+            2,
+            '0'
+          )}</span
+        >
+      {:else}
+        <!-- ====== Virtual scrolled emoji picker ====== -->
+        <Popover.Root bind:open={emojiPickerOpen}>
+          <Popover.Trigger>
+            <InputGroup.Button>
+              <Smile />
+            </InputGroup.Button>
+          </Popover.Trigger>
+          <Popover.Content class="left-1/2 w-70 p-0 sm:w-80" side="top" align="start">
+            <!-- Search input -->
+            <div class="border-b px-3 py-2">
+              <input
+                type="text"
+                placeholder="Search emoji..."
+                class="w-full bg-transparent text-sm outline-none"
+                bind:this={emojiSearch}
+                oninput={updateEmojiFilter}
+              />
             </div>
-          </div>
-        </Popover.Content>
-      </Popover.Root>
 
-      <!-- File attachment dropdown (unchanged) -->
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger>
-          <InputGroup.Button>
-            <Paperclip />
-          </InputGroup.Button>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content class="min-w-35">
-          <DropdownMenu.Item onSelect={() => handleFileSelection('image')}
-            >Picture</DropdownMenu.Item
-          >
-          <DropdownMenu.Item onSelect={() => handleFileSelection('video')}>Video</DropdownMenu.Item>
-          <DropdownMenu.Item onSelect={() => handleFileSelection('file')}
-            >Normal file</DropdownMenu.Item
-          >
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
+            <!-- Virtual scroll container -->
+            <div
+              bind:this={emojiContainer}
+              style="height: {CONTAINER_HEIGHT}px; overflow-y: auto; contain: strict;"
+              class="p-1"
+              onscroll={onEmojiScroll}
+            >
+              <div style="height: {totalRows * ITEM_SIZE}px; position: relative;">
+                {#each visibleEmojis as emoji, index}
+                  {@const globalIndex = startRow * COLUMNS + index}
+                  {@const row = Math.floor(globalIndex / COLUMNS)}
+                  {@const col = globalIndex % COLUMNS}
+                  <button
+                    type="button"
+                    style="position: absolute; left: {col * (100 / COLUMNS)}%; width: {100 /
+                      COLUMNS}%; top: {row * ITEM_SIZE}px; height: {ITEM_SIZE}px;"
+                    class="flex items-center justify-center rounded-md text-xl select-none hover:bg-accent focus:bg-accent"
+                    onclick={() => insertEmoji(emoji.native)}
+                    title={emoji.name}
+                  >
+                    {emoji.native}
+                  </button>
+                {/each}
+              </div>
+            </div>
+          </Popover.Content>
+        </Popover.Root>
+
+        <!-- File attachment dropdown (unchanged) -->
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger>
+            <InputGroup.Button>
+              <Paperclip />
+            </InputGroup.Button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content class="min-w-35">
+            <DropdownMenu.Item onSelect={() => handleFileSelection('image')}
+              >Picture</DropdownMenu.Item
+            >
+            <DropdownMenu.Item onSelect={() => handleFileSelection('video')}
+              >Video</DropdownMenu.Item
+            >
+            <DropdownMenu.Item onSelect={() => handleFileSelection('file')}
+              >Normal file</DropdownMenu.Item
+            >
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+      {/if}
     </InputGroup.Addon>
 
     <InputGroup.Addon align="inline-end">
-      <InputGroup.Button class="group" onclick={submit}>
-        <SendHorizontal class="absolute transition group-data-[has-value=false]:scale-0" />
-      </InputGroup.Button>
+      {#if isRecording}
+        <InputGroup.Button onclick={stopRecording}>
+          <span class="relative flex">
+            <span class="relative inline-flex text-red-500"
+              ><Mic />
+              <span
+                class="absolute h-full w-full animate-ping rounded-full bg-red-400 text-red-500 opacity-75"
+              ></span>
+            </span>
+          </span>
+        </InputGroup.Button>
+      {:else}
+        <InputGroup.Button
+          class="group"
+          data-has-value={has_value}
+          onclick={has_value ? submit : startRecording}
+        >
+          <SendHorizontal class="absolute transition group-data-[has-value=false]:scale-0" />
+          <Mic class="transition group-data-[has-value=true]:scale-0" />
+        </InputGroup.Button>
+      {/if}
     </InputGroup.Addon>
   </InputGroup.Root>
 </div>
