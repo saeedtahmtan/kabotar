@@ -1,0 +1,11 @@
+node_modules
+.git
+.gitignore
+local.db
+*.db-journal
+*.db-wal
+*.db-shm
+.env
+.env.*
+.spotlight
+build

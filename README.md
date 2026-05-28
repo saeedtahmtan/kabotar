@@ -57,3 +57,22 @@ npm run dev
 | `npm run db:push` | Push schema to database |
 | `npm run db:studio` | Open Drizzle Studio |
 | `npm run db:generate` | Generate SQL migration |
+| `npm run db:migrate` | Run generated SQL migrations |
+
+## Docker
+
+```sh
+# build the image
+docker build -t kabotar .
+
+# run with a persistent volume for the database
+docker run -v ./data:/app/data \
+  -e DATABASE_URL=file:/app/data/local.db \
+  -e BETTER_AUTH_SECRET=<secret> \
+  -e BETTER_AUTH_URL=http://localhost:3000 \
+  -e UUID_DATABASE_ID=<uuid> \
+  -p 3000:3000 \
+  kabotar
+```
+
+The schema is pushed automatically at container startup. SQLite data is stored in the mounted `./data` directory.
