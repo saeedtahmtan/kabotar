@@ -3,7 +3,8 @@
   import Register from './register.svelte';
   import Login from './login.svelte';
   import { BirdIcon } from '@lucide/svelte';
-  const { form } = $props();
+
+
 </script>
 
 <div class="flex h-screen w-screen flex-col items-center justify-center gap-5">
@@ -14,7 +15,7 @@
       <Tabs.Trigger value="login">Login</Tabs.Trigger>
       <Tabs.Trigger value="register">Register</Tabs.Trigger>
     </Tabs.List>
-    <Login {form}></Login>
-    <Register {form}></Register>
+    <Login />
+    <Register />
   </Tabs.Root>
 </div>

@@ -2,7 +2,7 @@ import { form, getRequestEvent } from '$app/server';
 import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
 import { conv } from '$lib/server/db/schema';
-import { redirect } from '@sveltejs/kit';
+import { invalid, redirect } from '@sveltejs/kit';
 import { APIError } from 'better-auth/api';
 import { z } from 'zod';
 
@@ -32,20 +32,20 @@ export const signIn = form(signInSchema, async (input) => {
     });
   } catch (error) {
     if (error instanceof APIError) {
-      return { success: false, message: error.message || 'Signin failed' };
+      invalid(error.message || 'Signin failed');
     }
-    return { success: false, message: `Unexpected error: ${error}` };
+    invalid(`Unexpected error: ${error}`);
   }
 
-  return { success: true, redirectTo: '/' };
+  redirect(303, '/');
 });
 
 export const signUp = form(signUpSchema, async (input) => {
   try {
     await db.insert(conv).values({
       id: input.username,
-      title: '',
-      type: 'user'
+      type: 'user',
+      private: true
     });
 
     await auth.api.signUpEmail({
@@ -59,9 +59,9 @@ export const signUp = form(signUpSchema, async (input) => {
     });
   } catch (error) {
     if (error instanceof APIError) {
-      return { success: false, message: error.message || 'Registration failed' };
+      invalid(error.message || 'Registration failed');
     }
-    return { success: false, message: `${error}` };
+    invalid(`${error}`);
   }
-  return { success: true, redirectTo: '/' };
+  redirect(303, '/');
 });

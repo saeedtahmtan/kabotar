@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import * as Card from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
   import * as Field from '$lib/components/ui/field';
@@ -6,8 +6,9 @@
   import { PenIcon } from '@lucide/svelte';
   import * as Tabs from '$lib/components/ui/tabs';
   import ToggleTheme from '$lib/components/toggle-theme.svelte';
-  import { enhance } from '$app/forms';
-  let { form } = $props();
+  import { signIn } from './auth.remote.ts';
+
+
 </script>
 
 <Tabs.Content value="login">
@@ -22,29 +23,25 @@
       </Card.Action>
     </Card.Header>
     <Card.Content>
-      <form method="POST" use:enhance>
+      <form {...signIn}>
         <Field.Set>
           <Field.Group>
-            <!--Email-->
             <Field.Field>
               <Field.Label>Username</Field.Label>
-              <Input placeholder="sohrab" name="username" />
+              <Input placeholder="sohrab" {...signIn.fields.username.as('text')} />
             </Field.Field>
-            <!--Password-->
             <Field.Field>
               <Field.Label>Password</Field.Label>
-              <Input type="password" placeholder="••••••••" name="password" />
+              <Input placeholder="••••••••" {...signIn.fields.password.as('password')} />
             </Field.Field>
             <Field.Separator />
-
             <Field.Field orientation="responsive">
-              <Button type="submit" formaction="?/signIn">
-                <PenIcon /> Sign in</Button
-              >
+              <Button type="submit">
+                <PenIcon /> Sign in
+              </Button>
               <Field.Description>
                 with sign in you are accepting the term of service that does not exist
-
-                <span class="text-destructive">{form?.message ?? ''}</span>
+                <span class="text-destructive">{signIn.fields.allIssues()?.[0] ?? ''}</span>
               </Field.Description>
             </Field.Field>
           </Field.Group>
