@@ -15,7 +15,9 @@
     joins: joinStream;
     gotoJoin: () => void;
   } = $props();
-  let personal = $derived(joins.filter((join) => join.type == 'personal'));
+  let personals = $derived(joins.filter((join) => join.type == 'personal'));
+  let channels = $derived(joins.filter((join) => join.type == 'channel'));
+  let groups = $derived(joins.filter((join) => join.type == 'group'));
 </script>
 
 <Sidebar.Content class="gap-0">
@@ -34,9 +36,33 @@
   <!--   </Sidebar.GroupContent> -->
   <!-- </Sidebar.Group> -->
 
-  {#if personal.length}
+  {#if personals.length}
     <CollapsibleSection title="Personal">
-      {#each joins as join}
+      {#each personals as personal}
+        <Sidebar.MenuButton class="h-fit">
+          {#snippet child({ props })}
+            <UserListItem href={personal.convId} {...props} {...personal.info} />
+          {/snippet}
+        </Sidebar.MenuButton>
+      {/each}
+    </CollapsibleSection>
+  {/if}
+
+  {#if channels.length}
+    <CollapsibleSection title="Channels">
+      {#each channels as join}
+        <Sidebar.MenuButton class="h-fit">
+          {#snippet child({ props })}
+            <UserListItem href={join.convId} {...props} {...join.info} />
+          {/snippet}
+        </Sidebar.MenuButton>
+      {/each}
+    </CollapsibleSection>
+  {/if}
+
+  {#if groups.length}
+    <CollapsibleSection title="Groups">
+      {#each groups as join}
         <Sidebar.MenuButton class="h-fit">
           {#snippet child({ props })}
             <UserListItem href={join.convId} {...props} {...join.info} />

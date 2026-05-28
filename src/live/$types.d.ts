@@ -16,6 +16,8 @@ declare module '$live/join' {
   import type { Readable } from 'svelte/store';
 
   export const joinCreate: (convId: string) => Promise<any>;
+  export const channelCreate: (name: string, identifier?: string) => Promise<any>;
+  export const groupCreate: (name: string, identifier?: string) => Promise<any>;
   export const joinStream: StreamStore<any | undefined | { error: RpcError }> & { load(platform: any, options?: { args?: any[]; user?: any }): Promise<any> };
   export const empty: Readable<undefined>;
 }
