@@ -1,42 +1,59 @@
-# sv
+# Kabotar
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A real-time chat application built with SvelteKit, featuring personal DMs, channels, and groups.
 
-## Creating a project
+## Stack
 
-If you're seeing this, you've probably already done this step. Congrats!
+- **Frontend:** Svelte 5 + SvelteKit
+- **Realtime:** svelte-realtime (WebSocket via uWebSockets.js)
+- **Database:** SQLite (libSQL/Turso) + Drizzle ORM
+- **Auth:** better-auth (email-based, SQLite adapter)
+- **UI:** shadcn-svelte components, Tailwind CSS
+- **i18n:** Paraglide (English, Farsi)
+
+## Features
+
+- Personal direct messaging between users
+- Public and private channels for broadcast messages
+- Public and private groups for collaboration
+- Deterministic conversation IDs for public channels/groups
+- Real-time message streaming and updates
+- User authentication with session management
+
+## Getting Started
 
 ```sh
-# create a new project
-npx sv create my-app
-```
+# install dependencies
+npm install
 
-To recreate this project with the same configuration:
+# copy environment file and fill in variables
+cp .env.example .env
 
-```sh
-# recreate this project
-bun x sv@0.12.8 create --template minimal --types ts --add prettier eslint tailwindcss="plugins:typography" devtools-json drizzle="database:sqlite+sqlite:libsql" better-auth="demo:password" paraglide="languageTags:en, fa+demo:yes" --install bun kabotar
-```
+# push database schema
+npm run db:push
 
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
+# start development server
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+### Environment Variables
 
-To create a production version of your app:
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | SQLite database path (e.g., `file:local.db`) |
+| `BETTER_AUTH_SECRET` | better-auth secret key |
+| `BETTER_AUTH_URL` | Application URL (e.g., `http://localhost:5173`) |
+| `UUID_DATABASE_ID` | UUID v5 namespace for deterministic IDs |
 
-```sh
-npm run build
-```
+## Scripts
 
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+| Command | Description |
+|---|---|
+| `npm run dev` | Start dev server |
+| `npm run build` | Production build |
+| `npm run preview` | Preview production build |
+| `npm run check` | Run svelte-check |
+| `npm run lint` | Run ESLint |
+| `npm run db:push` | Push schema to database |
+| `npm run db:studio` | Open Drizzle Studio |
+| `npm run db:generate` | Generate SQL migration |
