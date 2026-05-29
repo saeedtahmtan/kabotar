@@ -29,6 +29,7 @@ export interface RenderedMessageLayout {
   maxWidth: number;
   isMultiline: boolean;
   isMine: boolean;
+  showTime: boolean;
   visible: boolean;
   after: boolean;
   before: boolean;
@@ -41,6 +42,7 @@ export interface AllMessagesLayoutInput {
   time: string;
   timeWidth: number;
   userId: string;
+  createdAt: string | Date;
   blocks: { prepared: PreparedRichInline; height: number }[];
 }
 
@@ -87,15 +89,23 @@ export function computeAllMessagesLayout(
     fullHeight += after ? config.messageMarginLow : config.messageMargin;
     const minePadding = isMine ? config.mineOffset : 0;
 
-    if (
-      msg.timeWidth + bubbleWidth + minePadding + config.timeGap >= containerWidth ||
-      totalLineCount > 1
-    ) {
-      isMultiline = true;
-      bubbleWidth = Math.max(msg.timeWidth + minePadding + config.messagePadding, bubbleWidth);
-      fullHeight += config.multilineTimeHeight;
+    const prevMsg = pointer > 0 ? Messages[pointer - 1] : null;
+    const showTime = !prevMsg || prevMsg.userId !== msg.userId ||
+      Math.floor(new Date(msg.createdAt).getTime() / 60000) !== Math.floor(new Date(prevMsg.createdAt).getTime() / 60000);
+
+    if (showTime) {
+      if (
+        msg.timeWidth + bubbleWidth + minePadding + config.timeGap >= containerWidth ||
+        totalLineCount > 1
+      ) {
+        isMultiline = true;
+        bubbleWidth = Math.max(msg.timeWidth + minePadding + config.messagePadding, bubbleWidth);
+        fullHeight += config.multilineTimeHeight;
+      } else {
+        bubbleWidth += msg.timeWidth + minePadding + config.timeGap;
+      }
     } else {
-      bubbleWidth += msg.timeWidth + minePadding + config.timeGap;
+      isMultiline = totalLineCount > 1;
     }
 
     if (fullHeight <= areaTop - config.visibleOverflow) visible = false;
@@ -107,6 +117,7 @@ export function computeAllMessagesLayout(
       maxWidth: bubbleWidth,
       isMultiline,
       isMine,
+      showTime,
       visible,
       after,
       before,

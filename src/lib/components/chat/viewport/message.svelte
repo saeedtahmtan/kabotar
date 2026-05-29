@@ -32,10 +32,12 @@
       )}
     >
       <div class="unicode">{@html msg.html}</div>
-      <span class="flex items-center gap-1 text-xs opacity-50">
-        {msg.time}
-        {#if msg.isMine}<Check size={16} />{/if}
-      </span>
+      {#if msg.showTime}
+        <span class="flex items-center gap-1 text-xs opacity-50">
+          {msg.time}
+          {#if msg.isMine}<Check size={16} />{/if}
+        </span>
+      {/if}
     </ContextMenu.Trigger>
     <ContextMenu.Content>
       {#if msg.isMine}
