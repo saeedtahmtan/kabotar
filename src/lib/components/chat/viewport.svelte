@@ -15,11 +15,15 @@
   let {
     messages = [],
     sender,
-    onDelete
+    hasMore = false,
+    onDelete,
+    onLoadMore
   }: {
     messages?: Message[];
     sender: string;
+    hasMore?: boolean;
     onDelete: (id: string) => void;
+    onLoadMore?: () => void;
   } = $props();
 
   let viewportRef = $state<HTMLElement | null>(null);
@@ -28,6 +32,8 @@
   let fullHeight = $state(0);
   let areaTop = $state(0);
   let areaBottom = $state(0);
+  let topSentinel = $state<HTMLElement | null>(null);
+  let loadingMore = $state(false);
 
   const preparedMessages: PreparedMessage[] = $derived(prepareMessages(messages));
 
@@ -87,6 +93,29 @@
     render = result.messages.filter((m) => m.visible);
   }
 
+  $effect(() => {
+    const el = topSentinel;
+    const container = viewportRef;
+    if (!el || !container || !hasMore) return;
+
+    const observer = new IntersectionObserver(
+      async ([entry]) => {
+        if (entry.isIntersecting && hasMore && !loadingMore) {
+          loadingMore = true;
+          try {
+            await onLoadMore?.();
+          } finally {
+            loadingMore = false;
+          }
+        }
+      },
+      { root: container, threshold: 0 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  });
+
   function deleteMessage(messageId: string) {
     return () => {
       onDelete(messageId);
@@ -104,4 +133,9 @@
   {#each render as msg (msg.id)}
     <MessageBobble {msg} {deleteMessage} />
   {/each}
+  <div
+    bind:this={topSentinel}
+    class="pointer-events-none absolute"
+    style="bottom:{fullHeight}px;height:1px;width:1px;"
+  ></div>
 </div>

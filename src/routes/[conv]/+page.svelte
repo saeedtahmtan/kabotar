@@ -13,7 +13,12 @@
   // TODO need to be typed correctly
 
   const conv = $derived(page.params.conv);
-  const messages = $derived(msgStream(conv));
+  const streamStore = $derived(msgStream(conv));
+  let hasMore = $state(false);
+  $effect(() => {
+    $streamStore;
+    hasMore = streamStore.hasMore;
+  });
   let sidebarOpen = $state(false);
   const [selectedJoin] = $derived(
     $joinStream?.filter((join: any) => join.convId == conv) || { title: '', image: '' }
@@ -42,7 +47,7 @@
   }
 
   function getConnectionState() {
-    if ($messages == undefined) return 'Updating ...';
+    if ($streamStore == undefined) return 'Updating ...';
     return 'online';
   }
 
@@ -65,7 +70,13 @@
       {...selectedJoin?.info}
       type={selectedJoin?.type ?? 'save'}
     />
-    <Viewport messages={$messages} sender={user.id} onDelete={doDelete} />
+    <Viewport
+      messages={$streamStore}
+      sender={user.id}
+      {hasMore}
+      onDelete={doDelete}
+      onLoadMore={() => streamStore.loadMore()}
+    />
     <footer class="mx-auto flex w-full max-w-3xl p-2 pt-0">
       <Input onSubmit={doSend} />
     </footer>
