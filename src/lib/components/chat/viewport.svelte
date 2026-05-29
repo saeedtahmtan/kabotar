@@ -99,11 +99,11 @@
     if (!el || !container || !hasMore) return;
 
     const observer = new IntersectionObserver(
-      async ([entry]) => {
+      ([entry]) => {
         if (entry.isIntersecting && hasMore && !loadingMore) {
           loadingMore = true;
           try {
-            await onLoadMore?.();
+            onLoadMore?.();
           } finally {
             loadingMore = false;
           }

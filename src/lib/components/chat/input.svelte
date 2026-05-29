@@ -1,89 +1,13 @@
 <script lang="ts">
-  import { Mic, Paperclip, SendHorizontal, Smile, X } from '@lucide/svelte';
+  import { Mic, Paperclip, SendHorizontal, X } from '@lucide/svelte';
   import * as InputGroup from '$lib/components/ui/input-group';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-  import { onMount, tick } from 'svelte';
-  import * as Popover from '$lib/components/ui/popover';
+  import { onMount } from 'svelte';
   import { prepareWithSegments, walkLineRanges } from '@chenglou/pretext';
+  import { fileTypeFromBuffer } from 'file-type';
 
-  import emojis from '$lib/assets/emojis.json';
-  type EmojiEntry = {
-    id: string;
-    name: string;
-    native: string;
-    keywords: string[];
-    emoticons?: string[];
-  };
-
-  // ---------- emoji picker state & virtual scroll ----------
-  let emojiPickerOpen = $state(false);
-  const emojiGroups: Array<{ label: string; items: EmojiEntry[] }> = emojis;
-  // flatten all emojis for easy filtering
-  const allEmojis = emojiGroups.flatMap((g) => g.items);
-
-  let emojiSearch = $state<HTMLInputElement | undefined>();
-  let filteredEmojis = $state(allEmojis);
-  let debounceTimer: NodeJS.Timeout;
-
-  function updateEmojiFilter() {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      if (!emojiSearch) return;
-      const q = emojiSearch.value.toLowerCase().trim();
-      filteredEmojis = q
-        ? allEmojis.filter(
-            (e) =>
-              e.name.toLowerCase().includes(q) ||
-              e.keywords.some((k) => k.toLowerCase().includes(q))
-          )
-        : allEmojis;
-    }, 150);
-  }
-
-  const CONTAINER_HEIGHT = 320;
-  const ITEM_SIZE = 44; // height of one emoji button (px)
-  const COLUMNS = 7; // number of emojis per row
-  const OVERSCAN = 2; // extra rows rendered above/below
-
-  let emojiContainer = $state<HTMLDivElement | null>(null);
-  let emojiScrollTop = $state(0);
-
-  let totalRows = $derived(Math.ceil(filteredEmojis.length / COLUMNS));
-  let startRow = $derived(Math.max(0, Math.floor(emojiScrollTop / ITEM_SIZE) - OVERSCAN));
-  let endRow = $derived(
-    Math.min(totalRows, Math.ceil((emojiScrollTop + CONTAINER_HEIGHT) / ITEM_SIZE) + OVERSCAN)
-  );
-  let visibleEmojis = $derived(filteredEmojis.slice(startRow * COLUMNS, endRow * COLUMNS));
-
-  function onEmojiScroll(e: Event) {
-    emojiScrollTop = (e.target as HTMLElement).scrollTop;
-  }
-
-  // reset scroll & search when picker opens
-  $effect(() => {
-    if (emojiPickerOpen && emojiContainer) {
-      tick().then(() => {
-        if (!emojiSearch) return;
-        emojiContainer!.scrollTop = 0;
-        emojiSearch.value = '';
-        filteredEmojis = allEmojis;
-      });
-    }
-  });
-
-  // original emoji insertion logic
-  function insertEmoji(emoji: string) {
-    if (!textarea) return;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const newValue = value.slice(0, start) + emoji + value.slice(end);
-    value = newValue;
-    setTimeout(() => {
-      if (!textarea) return;
-      textarea.selectionStart = textarea.selectionEnd = start + emoji.length;
-    }, 0);
-  }
-  // --------------------------------------------------------
+  import EmojiPicker from './emoji-picker.svelte';
+  import FileChips from './file-chips.svelte';
 
   const padding = 4.8 * 2;
 
@@ -95,7 +19,9 @@
   let width = $state(0);
   let widthSizeMin = $state(0);
   let widthSizeMax = $state(0);
-  let files = $state<ArrayBuffer[]>([]);
+  let files = $state<
+    { name: string; size: number; mime: string; ext: string; buffer: ArrayBuffer }[]
+  >([]);
 
   let pendingFileType: 'image' | 'video' | 'file' | null = null;
 
@@ -153,8 +79,9 @@
           if (shouldSave && audioChunks.length) {
             const blob = new Blob(audioChunks, { type: 'audio/webm' });
             const buffer = await blob.arrayBuffer();
-            files = [buffer];
-            fileCount = 1;
+            files = [
+              { name: 'Voice message.webm', size: blob.size, mime: 'audio/webm', ext: 'webm', buffer }
+            ];
           }
           cleanupRecording();
         };
@@ -214,6 +141,7 @@
     lastTimestamp = 0;
     recordingStart = 0;
   }
+
   let fontFamily = $derived(
     textarea
       ? `${getComputedStyle(textarea).fontSize} ${getComputedStyle(textarea).fontFamily}`
@@ -221,7 +149,6 @@
   );
 
   let lineHeight = 24;
-  let fileCount = $state(0);
 
   const {
     onSubmit
@@ -284,8 +211,7 @@
     if (!textarea) return;
     const trimmedValue = textarea.value.trim();
     if (trimmedValue.length === 0) return;
-    onSubmit(trimmedValue, files);
-    fileCount = 0;
+    onSubmit(trimmedValue, files.map(f => f.buffer));
     files = [];
     value = '';
 
@@ -302,7 +228,18 @@
     submit();
   }
 
-  // File handling with shadcn-svelte dropdown
+  function insertEmoji(emoji: string) {
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const newValue = value.slice(0, start) + emoji + value.slice(end);
+    value = newValue;
+    setTimeout(() => {
+      if (!textarea) return;
+      textarea.selectionStart = textarea.selectionEnd = start + emoji.length;
+    }, 0);
+  }
+
   function handleFileSelection(type: 'image' | 'video' | 'file') {
     if (!fileInputRef) return;
     pendingFileType = type;
@@ -316,10 +253,13 @@
   async function onFileSelected(event: Event) {
     const input = event.currentTarget as HTMLInputElement;
     if (!input.files) return;
-    fileCount = input.files.length;
     const tempFiles = [];
-    for (let i = 0; i < fileCount; i++) {
-      tempFiles.push(await input.files[i].arrayBuffer()); // fixed: use files[i], not files[0]
+    for (const file of input.files) {
+      const buffer = await file.arrayBuffer();
+      const detected = await fileTypeFromBuffer(new Uint8Array(buffer));
+      const mime = detected?.mime || 'application/octet-stream';
+      const ext = detected?.ext || 'bin';
+      tempFiles.push({ name: file.name, size: file.size, mime, ext, buffer });
     }
     files = tempFiles;
     pendingFileType = null;
@@ -327,16 +267,14 @@
 </script>
 
 <div class="flex w-full flex-col gap-1">
-  {#if fileCount != 0}
-    <p>{fileCount} file selected</p>
-  {/if}
+  <FileChips {files} onRemove={(i) => files = files.filter((_, j) => j !== i)} />
   <InputGroup.Root class="items-end bg-sidebar shadow-sm backdrop-blur-md [--spacing:0.3rem]">
     {#if isRecording}
       <div
         bind:clientWidth={visualizerWidth}
         class="flex h-full w-0 grow items-center justify-center p-2"
       >
-        <div class="flex h-full w-full items-end gap-0.5">
+        <div class="flex h-full w-full items-center gap-0.5">
           {#each bars as bar}
             <div class="w-1.25 rounded-full bg-accent-foreground/80" style="height: {bar}%"></div>
           {/each}
@@ -366,54 +304,8 @@
           )}</span
         >
       {:else}
-        <!-- ====== Virtual scrolled emoji picker ====== -->
-        <Popover.Root bind:open={emojiPickerOpen}>
-          <Popover.Trigger>
-            <InputGroup.Button>
-              <Smile />
-            </InputGroup.Button>
-          </Popover.Trigger>
-          <Popover.Content class="left-1/2 w-70 p-0 sm:w-80" side="top" align="start">
-            <!-- Search input -->
-            <div class="border-b px-3 py-2">
-              <input
-                type="text"
-                placeholder="Search emoji..."
-                class="w-full bg-transparent text-sm outline-none"
-                bind:this={emojiSearch}
-                oninput={updateEmojiFilter}
-              />
-            </div>
+        <EmojiPicker onInsert={insertEmoji} />
 
-            <!-- Virtual scroll container -->
-            <div
-              bind:this={emojiContainer}
-              style="height: {CONTAINER_HEIGHT}px; overflow-y: auto; contain: strict;"
-              class="p-1"
-              onscroll={onEmojiScroll}
-            >
-              <div style="height: {totalRows * ITEM_SIZE}px; position: relative;">
-                {#each visibleEmojis as emoji, index}
-                  {@const globalIndex = startRow * COLUMNS + index}
-                  {@const row = Math.floor(globalIndex / COLUMNS)}
-                  {@const col = globalIndex % COLUMNS}
-                  <button
-                    type="button"
-                    style="position: absolute; left: {col * (100 / COLUMNS)}%; width: {100 /
-                      COLUMNS}%; top: {row * ITEM_SIZE}px; height: {ITEM_SIZE}px;"
-                    class="flex items-center justify-center rounded-md text-xl select-none hover:bg-accent focus:bg-accent"
-                    onclick={() => insertEmoji(emoji.native)}
-                    title={emoji.name}
-                  >
-                    {emoji.native}
-                  </button>
-                {/each}
-              </div>
-            </div>
-          </Popover.Content>
-        </Popover.Root>
-
-        <!-- File attachment dropdown (unchanged) -->
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
             <InputGroup.Button>
