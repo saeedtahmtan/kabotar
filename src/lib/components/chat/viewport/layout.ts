@@ -3,6 +3,7 @@ import { walkRichInlineLineRanges, type PreparedRichInline } from '@chenglou/pre
 export interface MessageLayoutConfig {
   messagePadding: number;
   messageMargin: number;
+  messageMarginLow: number;
   containerPadding: number;
   timeGap: number;
   multilineTimeHeight: number;
@@ -11,8 +12,9 @@ export interface MessageLayoutConfig {
 }
 
 export const defaultConfig: MessageLayoutConfig = {
-  messagePadding: 8,
+  messagePadding: 12,
   messageMargin: 8,
+  messageMarginLow: 3,
   containerPadding: 16,
   timeGap: 4,
   multilineTimeHeight: 20,
@@ -28,6 +30,8 @@ export interface RenderedMessageLayout {
   isMultiline: boolean;
   isMine: boolean;
   visible: boolean;
+  after: boolean;
+  before: boolean;
   top: number;
 }
 
@@ -46,20 +50,24 @@ export interface AllMessagesLayoutResult {
 }
 
 export function computeAllMessagesLayout(
-  preparedMessages: AllMessagesLayoutInput[],
+  Messages: AllMessagesLayoutInput[],
   sender: string,
-  containerMaxWidth: number,
+  viewportWidth: number,
   scrollTop: number,
   viewportHeight: number,
   config: MessageLayoutConfig = defaultConfig
 ): AllMessagesLayoutResult {
   const areaTop = scrollTop;
   const areaBottom = areaTop + viewportHeight;
-  const containerWidth = containerMaxWidth * 0.95 - 1 - config.containerPadding;
-  let fullHeight = 0;
+  const containerWidth = (viewportWidth * 0.9) - 1 - config.containerPadding;
+  let fullHeight = 8;
+  let pointer = 0;
   const messages: RenderedMessageLayout[] = [];
 
-  for (const msg of preparedMessages) {
+  for (const msg of Messages) {
+    const before = pointer == 0 ? false : Messages[pointer - 1].userId === msg.userId;
+    const after = pointer + 1 < Messages.length && Messages[pointer + 1].userId === msg.userId;
+
     const top = fullHeight;
     let visible = top < areaBottom + config.visibleOverflow;
     let bubbleWidth = config.messagePadding;
@@ -76,7 +84,7 @@ export function computeAllMessagesLayout(
       totalLineCount += lineCount;
     }
 
-    fullHeight += config.messageMargin;
+    fullHeight += after ? config.messageMarginLow : config.messageMargin;
     const minePadding = isMine ? config.mineOffset : 0;
 
     if (
@@ -100,8 +108,12 @@ export function computeAllMessagesLayout(
       isMultiline,
       isMine,
       visible,
+      after,
+      before,
       top
     });
+
+    pointer++;
   }
 
   return { messages, fullHeight };

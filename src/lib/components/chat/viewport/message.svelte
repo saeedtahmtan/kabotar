@@ -15,11 +15,13 @@
 
 <div
   class={cn(
-    'md slide-in in absolute  mb-2 rounded-2xl  bg-accent px-1  transition-all',
-    msg.isMine ? ' origin-left self-end' : 'bg-bobble',
+    'md slide-in in absolute   rounded-2xl  bg-accent px-1.5 transition-all',
+    msg.after ? 'rounded-t-xs' : '',
+    msg.before ? 'rounded-b-xs' : '',
+    msg.isMine ? ' origin-left self-end rounded-l-2xl!' : 'rounded-r-2xl! bg-bobble',
     msg.isMultiline ? 'origin-right flex-col' : 'items-end'
   )}
-  style="width: {msg.maxWidth + 1}px;bottom:{msg.top}px;"
+  style="width: {msg.maxWidth + 1}px;bottom:{msg.top}px;--y:{msg.top};"
 >
   <ContextMenu.Root>
     <ContextMenu.Trigger
@@ -48,16 +50,7 @@
 
 <style>
   .in {
-    animation: fadeIn linear;
-    animation-range-start: cover;
-    animation-range-end: contain;
-    animation-timeline: view();
-  }
-
-  .out {
-    animation: fadeOut linear;
-    animation-range-start: cover;
-    animation-range-end: contain;
-    animation-timeline: view();
+    --height: var(--bottom) - var(--top);
+    /* opacity: calc((var(--y)) / var(--height)); */
   }
 </style>

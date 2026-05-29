@@ -26,13 +26,15 @@
   let scrollTop = $state(0);
   let render = $state<RenderedMessageLayout[]>([]);
   let fullHeight = $state(0);
+  let areaTop = $state(0);
+  let areaBottom = $state(0);
 
   const preparedMessages: PreparedMessage[] = $derived(prepareMessages(messages));
 
   $effect(() => {
     if (!viewportRef) return;
     const observer = new ResizeObserver(([entry]) => {
-      requestAnimationFrame(() => computeLayout(entry.contentRect.width));
+      requestAnimationFrame(() => computeLayout(entry.target.clientWidth));
     });
 
     function onscroll() {
@@ -66,6 +68,9 @@
     )
       return;
 
+    areaTop = scrollTop;
+    areaBottom = areaTop + viewportRef.clientHeight;
+
     const result = computeAllMessagesLayout(
       preparedMessages,
       sender,
@@ -93,8 +98,9 @@
 <div
   class="relative mx-auto flex h-0 w-full max-w-3xl grow flex-col-reverse overflow-y-auto scroll-smooth px-3 transition-transform duration-500"
   bind:this={viewportRef}
+  style="--top:{areaTop};--bottom:{areaBottom};"
 >
-  <div class="w-1 shrink-0" style="height:{fullHeight}px"></div>
+  <div class="w-1 shrink-0" style="height:{fullHeight}px;"></div>
   {#each render as msg (msg.id)}
     <MessageBobble {msg} {deleteMessage} />
   {/each}
