@@ -2,7 +2,7 @@
 import { db } from '$lib/server/db';
 import { message } from '$lib/server/db/schema';
 import { binaryDecode as b } from '$lib/utils';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, lt } from 'drizzle-orm';
 import { live, LiveError, type LiveContext } from 'svelte-realtime';
 
 import { rollDice } from '$lib/server/live/chat.dice';
@@ -83,20 +83,23 @@ export const msgStream = live.stream(
   (ctx, convId) => `msg:${convId}`,
   async (ctx, convId) => {
     const limit = 30;
-    const page = (ctx.cursor as number) || 0;  // cursor is a number (page index)
-    const offset = page * limit;
+    const cursor = ctx.cursor as string | null;
 
-    const rows = await db
+    const query = db
       .select()
       .from(message)
       .where(eq(message.convId, convId))
       .orderBy(desc(message.createdAt))
-      .limit(limit + 1)
-      .offset(offset);
+      .limit(limit + 1);
 
+    if (cursor) {
+      query.where(lt(message.createdAt, new Date(cursor)));
+    }
+
+    const rows = await query;
     const hasMore = rows.length > limit;
     const data = hasMore ? rows.slice(0, limit) : rows;
-    const nextCursor = hasMore ? page + 1 : null;  // return a number as cursor
+    const nextCursor = hasMore ? data.at(-1)!.createdAt.toISOString() : null;
 
     return { data, hasMore, cursor: nextCursor };
   },
