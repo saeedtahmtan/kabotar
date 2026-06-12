@@ -1,15 +1,15 @@
-import { htmlEscape, htmlUnescape } from 'escape-goat';
+import { htmlUnescape } from 'escape-goat';
 import type { Token } from 'marked';
 
-const fontFamily = `ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "Estedad"`;
+const fontFamily =`ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "Estedad"`;
 const codeFontFamily = `"Fira Code", "Cascadia Code", Consolas, "Liberation Mono", Menlo, Courier, monospace`;
-const BLOCKQUOTE_MARGIN = 18;   // pixels per nesting level (adjust to taste)
+const BLOCKQUOTE_MARGIN = 18; // pixels per nesting level (adjust to taste)
 
 export type LineItem = {
   text: string;
   font: string;
   letterSpacing?: number;
-  break?: "normal" | "never";
+  break?: 'normal' | 'never';
   extraWidth?: number;
 };
 
@@ -40,7 +40,7 @@ export function walkBlocks(tokens: Token[]): Line[] {
         const { font, letterSpacing } = getHeadingFont(token.depth);
         blocks.push({
           items: [{ text: token.text, font, letterSpacing }],
-          height: getHeadingLineHeight(token.depth),
+          height: getHeadingLineHeight(token.depth)
         });
         break;
       }
@@ -49,7 +49,7 @@ export function walkBlocks(tokens: Token[]): Line[] {
         for (const line of codeLines) {
           blocks.push({
             items: [{ text: line, font: getCodeFont(), extraWidth: 10 }],
-            height: getCodeLineHeight(),
+            height: getCodeLineHeight()
           });
         }
         break;
@@ -61,7 +61,7 @@ export function walkBlocks(tokens: Token[]): Line[] {
           // Increase depth
           line.blockquote = (line.blockquote ?? 0) + 1;
           // Prepend a margin spacer item – exactly like the code block/ codespan pattern
-          line.items[0].extraWidth = line.blockquote * BLOCKQUOTE_MARGIN
+          line.items[0].extraWidth = line.blockquote * BLOCKQUOTE_MARGIN;
         }
         blocks.push(...innerLines);
         break;
@@ -97,7 +97,7 @@ function walk(tokens: Token[]): Line[] {
         case 'text':
           lines[currentLineIdx].push({
             text: htmlUnescape(tok.text),
-            font: getFontForStyle(isBold, isItalic),
+            font: getFontForStyle(isBold, isItalic)
           });
           break;
         case 'codespan':
@@ -123,7 +123,7 @@ function walk(tokens: Token[]): Line[] {
     .filter((line) => line.length > 0)
     .map((line) => ({
       items: line,
-      height: 28,
+      height: 28
     }));
 }
 

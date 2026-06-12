@@ -75,9 +75,11 @@
 
 <Popover.Root bind:open={open}>
   <Popover.Trigger>
-    <InputGroup.Button>
-      <Smile />
-    </InputGroup.Button>
+    {#snippet child({ props })}
+      <InputGroup.Button {...props}>
+        <Smile />
+      </InputGroup.Button>
+    {/snippet}
   </Popover.Trigger>
   <Popover.Content class="left-1/2 w-70 p-0 sm:w-80" side="top" align="start">
     <div class="border-b px-3 py-2">

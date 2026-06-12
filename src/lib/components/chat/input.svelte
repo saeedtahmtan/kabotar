@@ -308,9 +308,11 @@
 
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
-            <InputGroup.Button>
-              <Paperclip />
-            </InputGroup.Button>
+            {#snippet child({ props })}
+              <InputGroup.Button {...props}>
+                <Paperclip />
+              </InputGroup.Button>
+            {/snippet}
           </DropdownMenu.Trigger>
           <DropdownMenu.Content class="min-w-35">
             <DropdownMenu.Item onSelect={() => handleFileSelection('image')}

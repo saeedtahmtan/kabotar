@@ -69,7 +69,7 @@ export function computeAllMessagesLayout(
 ): AllMessagesLayoutResult {
   const areaTop = scrollTop;
   const areaBottom = areaTop + viewportHeight;
-  const containerWidth = (viewportWidth * 0.9) - 1 - config.containerPadding;
+  const containerWidth = viewportWidth * 0.9 - 1 - config.containerPadding;
   let fullHeight = 8;
   let pointer = 0;
   const messages: RenderedMessageLayout[] = [];
@@ -103,8 +103,11 @@ export function computeAllMessagesLayout(
     const minePadding = isMine ? config.mineOffset : 0;
 
     const prevMsg = pointer > 0 ? Messages[pointer - 1] : null;
-    const showTime = !prevMsg || prevMsg.userId !== msg.userId ||
-      Math.floor(new Date(msg.createdAt).getTime() / 60000) !== Math.floor(new Date(prevMsg.createdAt).getTime() / 60000);
+    const showTime =
+      !prevMsg ||
+      prevMsg.userId !== msg.userId ||
+      Math.floor(new Date(msg.createdAt).getTime() / 60000) !==
+        Math.floor(new Date(prevMsg.createdAt).getTime() / 60000);
 
     if (showTime) {
       if (
