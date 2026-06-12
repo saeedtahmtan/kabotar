@@ -1,7 +1,7 @@
 import { htmlEscape, htmlUnescape } from 'escape-goat';
 import type { Token } from 'marked';
 
-const fontFamily = `ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`;
+const fontFamily = `ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "Estedad"`;
 const codeFontFamily = `"Fira Code", "Cascadia Code", Consolas, "Liberation Mono", Menlo, Courier, monospace`;
 const BLOCKQUOTE_MARGIN = 18;   // pixels per nesting level (adjust to taste)
 

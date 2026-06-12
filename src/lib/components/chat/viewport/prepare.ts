@@ -9,7 +9,7 @@ import { walkBlocks } from './walker';
 
 type Message = InferSelectModel<typeof message>;
 
-const fontFamily = `ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`;
+const fontFamily = `ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "Estedad"`;
 
 const dateTimeFormatter = Intl.DateTimeFormat('en-US', {
   hour: '2-digit',
