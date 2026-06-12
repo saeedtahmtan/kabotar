@@ -5,6 +5,7 @@ import { binaryDecode as b } from '$lib/utils';
 import { and, desc, eq } from 'drizzle-orm';
 import { live, LiveError, type LiveContext } from 'svelte-realtime';
 
+import { rollDice } from '$lib/server/live/chat.dice';
 import { htmlEscape } from 'escape-goat';
 import { randomUUID } from 'crypto';
 import { fileTypeFromBuffer } from 'file-type';
@@ -16,9 +17,11 @@ export const msgSend = live.binary(async (ctx: LiveContext<any>, buffer) => {
   const [convId, data, filesBuffer] = b(buffer, ['string', 'string', 'buffer']) as [string, string, ArrayBuffer];
   const files = b(filesBuffer, ['buffer']) as ArrayBuffer[];
 
-  const cleanText = htmlEscape(data.trim());
+  let cleanText = htmlEscape(data.trim());
 
   if (!cleanText.length && files.length === 0) return;
+
+  cleanText = rollDice(cleanText);
 
   const uploadedFiles: { name: string; pathname: string; size: number, mime: string, ext: string }[] = [];
 

@@ -90,7 +90,7 @@
     oldScrollTop = scrollTop;
     oldPreparedMessagesLength = preparedMessages.length;
     fullHeight = result.fullHeight;
-    render = result.messages.filter((m) => m.visible);
+    render = result.messages.filter((m) => m.visible || m.animatedUrl);
   }
 
   $effect(() => {

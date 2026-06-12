@@ -1,5 +1,5 @@
 import { walkRichInlineLineRanges, type PreparedRichInline } from '@chenglou/pretext/rich-inline';
-
+import type { SlotMachineUrls } from './postprocess';
 export interface MessageLayoutConfig {
   messagePadding: number;
   messageMargin: number;
@@ -34,6 +34,10 @@ export interface RenderedMessageLayout {
   after: boolean;
   before: boolean;
   top: number;
+  isSingleEmoji?: boolean;
+  animatedUrl?: string;
+  isSlotMachine?: boolean;
+  slotMachine?: SlotMachineUrls;
 }
 
 export interface AllMessagesLayoutInput {
@@ -44,6 +48,10 @@ export interface AllMessagesLayoutInput {
   userId: string;
   createdAt: string | Date;
   blocks: { prepared: PreparedRichInline; height: number }[];
+  isSingleEmoji?: boolean;
+  animatedUrl?: string;
+  isSlotMachine?: boolean;
+  slotMachine?: SlotMachineUrls;
 }
 
 export interface AllMessagesLayoutResult {
@@ -86,6 +94,11 @@ export function computeAllMessagesLayout(
       totalLineCount += lineCount;
     }
 
+    if (msg.isSingleEmoji) {
+      bubbleWidth = Math.max(bubbleWidth, 112 + config.messagePadding);
+      fullHeight += 84; // bump from text line-height (28px) to image height (112px)
+    }
+
     fullHeight += after ? config.messageMarginLow : config.messageMargin;
     const minePadding = isMine ? config.mineOffset : 0;
 
@@ -121,7 +134,11 @@ export function computeAllMessagesLayout(
       visible,
       after,
       before,
-      top
+      top,
+      isSingleEmoji: msg.isSingleEmoji,
+      animatedUrl: msg.animatedUrl,
+      isSlotMachine: msg.isSlotMachine,
+      slotMachine: msg.slotMachine,
     });
 
     pointer++;

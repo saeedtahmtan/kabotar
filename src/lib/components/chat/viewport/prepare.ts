@@ -4,6 +4,7 @@ import type { InferSelectModel } from 'drizzle-orm';
 import { marked } from 'marked';
 
 import type { message } from '$lib/server/db/schema';
+import { postprocessMessage, type SlotMachineUrls } from './postprocess';
 import { walkBlocks } from './walker';
 
 type Message = InferSelectModel<typeof message>;
@@ -25,6 +26,10 @@ export type PreparedMessage = Message & {
     height: number;
     words: { text: string; font: string; extraWidth?: number }[];
   }[];
+  isSingleEmoji?: boolean;
+  animatedUrl?: string;
+  isSlotMachine?: boolean;
+  slotMachine?: SlotMachineUrls;
 };
 
 export function prepareMessages(messages: Message[]): PreparedMessage[] {
@@ -43,8 +48,21 @@ export function prepareMessages(messages: Message[]): PreparedMessage[] {
         words: block.items
       }));
       const html = marked.parser(markdown);
+      const trimmed = msg.data.trim().replace(/\uFE0F/g, '');
+      const { isSingleEmoji, animatedUrl, isSlotMachine, slotMachine } =
+        postprocessMessage(trimmed);
 
-      return { html, blocks, ...msg, time, timeWidth };
+      return {
+        html,
+        blocks,
+        ...msg,
+        time,
+        timeWidth,
+        isSingleEmoji,
+        animatedUrl,
+        isSlotMachine,
+        slotMachine
+      };
     })
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }

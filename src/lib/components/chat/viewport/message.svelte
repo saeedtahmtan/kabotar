@@ -3,6 +3,8 @@
   import { cn } from '$lib/utils';
   import { Bookmark, Check, Trash } from '@lucide/svelte';
   import type { RenderedMessageLayout } from './layout';
+  import EmojiRenderer from './renderer.svelte';
+  import SlotMachine from './slot-machine.svelte';
 
   const {
     msg,
@@ -15,10 +17,11 @@
 
 <div
   class={cn(
-    'md slide-in in absolute   rounded-2xl  bg-accent px-1.5 transition-all',
+    'md slide-in in absolute rounded-2xl px-1.5 transition-all',
+    msg.isSingleEmoji ? 'bg-transparent!' : 'bg-accent',
     msg.after ? 'rounded-t-xs' : '',
     msg.before ? 'rounded-b-xs' : '',
-    msg.isMine ? ' origin-left self-end rounded-l-2xl!' : 'rounded-r-2xl! bg-bobble',
+    msg.isMine ? 'origin-left self-end rounded-l-2xl!' : 'rounded-r-2xl! bg-bobble',
     msg.isMultiline ? 'origin-right flex-col' : 'items-end'
   )}
   style="width: {msg.maxWidth + 1}px;bottom:{msg.top}px;--y:{msg.top};"
@@ -31,7 +34,17 @@
         msg.isMultiline ? 'flex-col' : 'items-end'
       )}
     >
-      <div class="unicode">{@html msg.html}</div>
+      <div class={msg.isSingleEmoji ? '' : 'unicode'}>
+        {#if msg.isSingleEmoji && msg.animatedUrl}
+          {#if msg.isSlotMachine && msg.slotMachine}
+            <SlotMachine {...msg.slotMachine} />
+          {:else}
+            <EmojiRenderer src={msg.animatedUrl} randomReplay={true} />
+          {/if}
+        {:else}
+          {@html msg.html}
+        {/if}
+      </div>
       {#if msg.showTime}
         <span class="flex items-center gap-1 text-xs opacity-50">
           {msg.time}
