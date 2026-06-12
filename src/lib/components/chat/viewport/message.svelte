@@ -19,8 +19,8 @@
   class={cn(
     'md slide-in in absolute rounded-2xl px-1.5 transition-all',
     msg.isSingleEmoji ? 'bg-transparent!' : 'bg-accent',
-    msg.after ? 'rounded-t-xs' : '',
-    msg.before ? 'rounded-b-xs' : '',
+    msg.after ? 'rounded-t-none' : '',
+    msg.before ? 'rounded-b-none' : '',
     msg.isMine ? 'origin-left self-end rounded-l-2xl!' : 'rounded-r-2xl! bg-bobble',
     msg.isMultiline ? 'origin-right flex-col' : 'items-end'
   )}

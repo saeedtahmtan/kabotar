@@ -13,8 +13,8 @@ export interface MessageLayoutConfig {
 
 export const defaultConfig: MessageLayoutConfig = {
   messagePadding: 12,
-  messageMargin: 8,
-  messageMarginLow: 3,
+  messageMargin: 4,
+  messageMarginLow: 2,
   containerPadding: 16,
   timeGap: 4,
   multilineTimeHeight: 20,
