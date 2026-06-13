@@ -1,6 +1,10 @@
 import { auth } from '$lib/server/auth';
-import { createMessage } from 'svelte-realtime/server';
-export { close, unsubscribe } from 'svelte-realtime/server';
+import { realtime } from 'svelte-realtime/server';
+
+const hooks = realtime();
+
+export const message = hooks.message;
+export const close = hooks.close;
 
 export async function upgrade({ cookies }: { cookies: Record<string, string> }) {
   const cookieString = Object.entries(cookies)
@@ -14,5 +18,3 @@ export async function upgrade({ cookies }: { cookies: Record<string, string> }) 
   if (!session) return false;
   return session.user;
 }
-
-export const message = createMessage();
