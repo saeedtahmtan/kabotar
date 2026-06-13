@@ -33,7 +33,7 @@ export function postprocessMessage(trimmed: string): PostProcessResult {
 
   const slotMatch = trimmed.match(/^🎰([A-Za-z0-9_\-])$/);
   if (slotMatch) {
-    const diceInfo = (animEmojiMap as Record<string, { preview: string; outcomes: string[] }>)['🎰'];
+    const diceInfo = (animEmojiMap as any)['🎰'] as { preview: string; outcomes: string[] } | undefined;
     if (diceInfo) {
       const raw = decodeSlotChar(slotMatch[1]);
       if (raw >= 0) {
@@ -79,11 +79,12 @@ export function postprocessMessage(trimmed: string): PostProcessResult {
   }
 
   if (!animatedUrl) {
-    const diceInfo = (animEmojiMap as Record<string, { preview: string; outcomes: string[] }>)[trimmed];
+    const diceInfo = (animEmojiMap as any)[trimmed] as { preview: string; outcomes: string[] } | undefined;
     if (diceInfo) {
       animatedUrl = `${staticPrefix}${diceInfo.preview}`;
     } else {
       for (const [emoji, info] of Object.entries(animEmojiMap)) {
+        if (typeof info === 'string') continue;
         if (trimmed.startsWith(emoji)) {
           const rest = trimmed.slice(emoji.length);
           const value = parseInt(rest);

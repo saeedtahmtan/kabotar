@@ -1,6 +1,6 @@
 import animEmojiMap from '$lib/assets/anim-emoji.map.json';
 
-const EMOJI_MAP = animEmojiMap as Record<string, { preview: string; outcomes: string[] }>;
+const EMOJI_MAP = animEmojiMap as Record<string, string | { preview: string; outcomes: string[] }>;
 
 export function encodeSlotValue(value: number): string {
   if (value <= 26) return String.fromCharCode(64 + value);
@@ -22,7 +22,7 @@ export function decodeSlotChar(char: string): number {
 
 export function rollDice(text: string): string {
   const entry = EMOJI_MAP[text];
-  if (!entry || entry.outcomes.length === 0) return text;
+  if (!entry || typeof entry === 'string' || entry.outcomes.length === 0) return text;
 
   if (text === '🎰') {
     const value = Math.floor(Math.random() * 64) + 1;
