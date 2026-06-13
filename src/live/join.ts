@@ -1,7 +1,7 @@
 // realtime-allow-public
 import { env } from '$env/dynamic/private';
 import { db } from '$lib/server/db';
-import { conv, info, join, user } from '$lib/server/db/schema';
+import { conv, info, join, message, user } from '$lib/server/db/schema';
 import { and, eq, sql } from 'drizzle-orm';
 import { live, LiveError, type LiveContext } from 'svelte-realtime';
 import { v5 as uuidv5 } from 'uuid';
@@ -18,6 +18,9 @@ export type joinStream = {
   type: string;
   convUpdatedAt: Date;
   joinUpdatedAt: Date;
+  peerLastSeen: Date | null;
+  lastMessage: string | null;
+  isSelf: boolean;
   info: {
     title: string;
     image: string | null;
@@ -91,16 +94,22 @@ export const joinCreate = live(async (ctx: LiveContext<any>, convId: string) => 
     });
     if (existingJoin) return new LiveError('ALREADY JOINED', 'already joined');
 
-    const channelInfo = await db.query.info.findFirst({
-      where: eq(info.id, targetConv.id)
-    });
+    const existingJoinInfo = await db
+      .select({ infoId: join.infoId })
+      .from(join)
+      .where(and(eq(join.convId, convId), sql`${join.infoId} IS NOT NULL`))
+      .limit(1);
+    const resolvedInfoId = existingJoinInfo[0]?.infoId;
+    const channelInfo = resolvedInfoId
+      ? await db.query.info.findFirst({ where: eq(info.id, resolvedInfoId) })
+      : null;
 
     const [insertedJoins] = await db.insert(join)
       .values({
         convId,
         userId: ctx.user.id,
         type: targetConv.type,
-        infoId: channelInfo?.id ?? convId
+        infoId: resolvedInfoId ?? convId
       })
       .returning();
 
@@ -192,6 +201,29 @@ export const joinStream = live.stream(
     type: conv.type,
     convUpdatedAt: conv.updatedAt,
     joinUpdatedAt: join.updatedAt,
+    peerLastSeen: sql<Date | null>`
+      CASE
+        WHEN ${conv.type} = 'personal'
+        THEN (
+          SELECT pj.updated_at
+          FROM "join" AS pj
+          WHERE pj.conv_id = ${join.convId}
+            AND pj.user_id != ${join.userId}
+          LIMIT 1
+        )
+        ELSE NULL
+      END
+    `,
+    lastMessage: sql<string | null>`
+      (
+        SELECT ${message.data}
+        FROM ${message}
+        WHERE ${message.convId} = ${join.convId}
+        ORDER BY ${message.createdAt} DESC
+        LIMIT 1
+      )
+    `,
+    isSelf: sql<boolean>`${join.userId} = ${join.infoId}`,
     info: {
       title: sql<string>`COALESCE(${user.name}, ${info.title})`,
       image: sql<string | null>`COALESCE(${user.image}, ${info.image})`
