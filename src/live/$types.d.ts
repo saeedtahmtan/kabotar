@@ -21,3 +21,11 @@ declare module '$live/join' {
   export const joinStream: StreamStore<any | undefined | { error: RpcError }> & { load(platform: any, options?: { args?: any[]; user?: any }): Promise<any> };
   export const empty: Readable<undefined>;
 }
+
+declare module '$live/presence' {
+  import type { StreamStore, RpcError } from 'svelte-realtime/client';
+  import type { Readable } from 'svelte/store';
+
+  export const presence: ((convId: string) => StreamStore<any | undefined | { error: RpcError }>) & { load(platform: any, options?: { args?: any[]; user?: any }): Promise<any> };
+  export const empty: Readable<undefined>;
+}
