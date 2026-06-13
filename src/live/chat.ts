@@ -1,6 +1,6 @@
 // realtime-allow-public
 import { db } from '$lib/server/db';
-import { message } from '$lib/server/db/schema';
+import { join, message } from '$lib/server/db/schema';
 import { binaryDecode as b } from '$lib/utils';
 import { and, desc, eq, lt } from 'drizzle-orm';
 import { live, LiveError, type LiveContext } from 'svelte-realtime';
@@ -103,5 +103,15 @@ export const msgStream = live.stream(
 
     return { data, hasMore, cursor: nextCursor };
   },
-  { merge: 'crud', key: 'id' }
+  {
+    merge: 'crud',
+    key: 'id',
+    onSubscribe(ctx, topic) {
+      const convId = topic.slice(4);
+      db.update(join)
+        .set({ updatedAt: new Date() })
+        .where(and(eq(join.convId, convId), eq(join.userId, ctx.user.id)))
+        .run();
+    }
+  }
 );
