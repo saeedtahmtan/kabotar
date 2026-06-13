@@ -8,12 +8,15 @@
   import { msgStream, msgDelete, msgSend } from '$live/chat';
   import { fade } from 'svelte/transition';
   import { joinStream } from '$live/join';
+  import { presence } from '$live/presence';
+  import { status as wsStatus } from 'svelte-adapter-uws/client';
   import { beforeNavigate } from '$app/navigation';
   import { binaryEncode as b } from '$lib/utils';
   // TODO need to be typed correctly
 
-  const conv = $derived(page.params.conv);
+  const conv = $derived(page.params.conv ?? '');
   const streamStore = $derived(msgStream(conv));
+  const convPresence = $derived(presence(conv));
   let hasMore = $state(false);
   $effect(() => {
     $streamStore;
@@ -21,8 +24,24 @@
   });
   let sidebarOpen = $state(false);
   const [selectedJoin] = $derived(
-    $joinStream?.filter((join: any) => join.convId == conv) || { title: '', image: '' }
+    $joinStream?.filter((join: any) => join.convId == conv) ?? []
   );
+  const onlineCount = $derived(
+    selectedJoin ? [...new Map(($convPresence ?? []).map((p: any) => [p.key, p])).values()].length : 0
+  );
+  const headerState = $derived.by(() => {
+    if ($wsStatus !== 'open') return 'Reconnecting...';
+    if ($streamStore == null) return 'Updating ...';
+    if (!selectedJoin) return 'Your safe vault';
+    if (selectedJoin.type === 'personal') {
+      const otherOnline = $convPresence?.some((p: any) => p.key !== user.id);
+      if (otherOnline) return 'Online';
+      const lastSeen = (selectedJoin as any)?.peerLastSeen;
+      if (lastSeen) return formatLastSeen(new Date(lastSeen));
+      return 'Offline';
+    }
+    return `${onlineCount} online`;
+  });
 
   async function doSend(input: string, files: ArrayBuffer[]) {
     if (!conv) return;
@@ -46,15 +65,22 @@
     if (conv) msgDelete(conv, id);
   }
 
-  function getConnectionState() {
-    if ($streamStore == undefined) return 'Updating ...';
-    return 'online';
-  }
-
   const { user } = page.data;
   beforeNavigate(() => {
     sidebarOpen = false;
   });
+
+  function formatLastSeen(date: Date): string {
+    const now = Date.now();
+    const diff = now - date.getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  }
 </script>
 
 <div
@@ -66,8 +92,9 @@
 
   <div class="relative mx-auto flex grow flex-col sm:p-2" transition:fade>
     <Header
-      state={getConnectionState()}
-      {...selectedJoin?.info}
+      state={headerState}
+      title={selectedJoin?.info?.title ?? 'Saved Messages'}
+      image={selectedJoin?.info?.image}
       type={selectedJoin?.type ?? 'save'}
     />
     <Viewport
