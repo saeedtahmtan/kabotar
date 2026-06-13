@@ -5,18 +5,26 @@
   let {
     src,
     loop = false,
-    randomReplay = false
+    randomReplay = false,
+    onComplete,
+    dotLottieRefCallback: dotLottieCallback,
+    autoplay
   }: {
     src: string;
     loop?: boolean;
+    autoplay?: boolean;
     randomReplay?: boolean;
+    onComplete?: () => void;
+    dotLottieRefCallback?: (instance: DotLottie) => void;
   } = $props();
 
   let instance: DotLottie | null = $state(null);
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   function dotLottieRefCallback(dot: DotLottie) {
     instance = dot;
+    dotLottieCallback?.(instance);
     dot.addEventListener('complete', () => {
+      onComplete?.();
       if (randomReplay) {
         const delay = 5000 + Math.random() * 10000;
         timeoutId = setTimeout(() => {
@@ -45,7 +53,7 @@
 </script>
 
 <div class="size-28" role="button" tabindex="0" {onclick} {onkeydown}>
-  <DotLottieSvelte {src} autoplay {loop} {dotLottieRefCallback} />
+  <DotLottieSvelte {src} {autoplay} {loop} {dotLottieRefCallback} />
 </div>
 
 <style>

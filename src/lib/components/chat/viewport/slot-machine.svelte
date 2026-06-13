@@ -28,24 +28,42 @@
       showWinning = true;
     }
   }
-
-  function onClick() {
+  function onkeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onclick?.();
+    }
+  }
+  function onclick() {
     for (const r of refs) {
-      if (!r.isPlaying) {
-        r.stop();
-        r.play();
-      }
+      r.stop();
+      r.play();
     }
   }
 </script>
 
-<div class="slot-machine" onclick={onClick}>
-  <TGSRenderer src={showWinning && winningBg ? winningBg : background} autoplay={false} />
+<div
+  class="slot-machine"
+  {onclick}
+  {onkeydown}
+  aria-label="Play animation"
+  role="button"
+  tabindex="0"
+>
+  <TGSRenderer src={showWinning && winningBg ? winningBg : background} />
 
-  <div class="handle"><TGSRenderer src={handleUrl} loop={false} dotLottieRefCallback={collectRef} /></div>
+  <div class="handle">
+    <TGSRenderer src={handleUrl} loop={false} dotLottieRefCallback={collectRef} />
+  </div>
 
   {#each stickers as url (url)}
-    <TGSRenderer src={url} loop={false} onComplete={onStickerComplete} dotLottieRefCallback={collectRef} />
+    <TGSRenderer
+      src={url}
+      loop={false}
+      autoplay
+      onComplete={onStickerComplete}
+      dotLottieRefCallback={collectRef}
+    />
   {/each}
 </div>
 
