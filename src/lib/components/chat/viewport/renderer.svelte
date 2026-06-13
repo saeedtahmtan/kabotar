@@ -8,7 +8,7 @@
     randomReplay = false,
     onComplete,
     dotLottieRefCallback: dotLottieCallback,
-    autoplay
+    autoplay = true
   }: {
     src: string;
     loop?: boolean;
