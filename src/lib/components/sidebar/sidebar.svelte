@@ -13,7 +13,7 @@
   }: {
     joins?: joinStream;
     collapsible?: 'offcanvas' | 'icon' | 'none';
-    user: { username: string };
+    user: { id: string; username: string };
   } = $props();
 
   let page = $state('main');
@@ -30,7 +30,7 @@
     <Sidebar.Header>
       <SidebarHeader title={'kabotar'} {user} />
     </Sidebar.Header>
-    <Main {joins} gotoJoin={setPage('join')} />
+    <Main {joins} {user} gotoJoin={setPage('join')} />
     <Sidebar.Footer class="items-end p-5">
       <Button onclick={setPage('join')} class="h-12 w-12 rounded-full"><PenIcon /></Button>
     </Sidebar.Footer>

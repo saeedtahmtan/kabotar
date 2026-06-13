@@ -1,47 +1,78 @@
 <script lang="ts">
   import * as Sidebar from '$lib/components/ui/sidebar';
-  import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte';
   import * as Avatar from '$lib/components/ui/avatar';
   import { Hand, UserIcon } from '@lucide/svelte';
+  import { untrack } from 'svelte';
   import CollapsibleSection from './collapsible.svelte';
   import UserListItem from './conv.svelte';
   import { Button } from '../ui/button';
+  import { presence } from '$live/presence';
   import type { joinStream } from '../../../live/join';
 
   const {
     joins,
-    gotoJoin
+    gotoJoin,
+    user
   }: {
     joins: joinStream;
     gotoJoin: () => void;
+    user: { id: string };
   } = $props();
+
+  let presenceData = $state<Record<string, any[]>>({});
+
+  $effect(() => {
+    const currentJoins = joins;
+    if (!currentJoins) return;
+
+    const unsubs = currentJoins.map((j) => {
+      const store = presence(j.convId);
+      return store.subscribe((value) => {
+        untrack(() => {
+          const deduped = [...new Map((value ?? []).map((p: any) => [p.key, p])).values()];
+          presenceData[j.convId] = deduped;
+          presenceData = { ...presenceData };
+        });
+      });
+    });
+
+    return () => {
+      for (const fn of unsubs) fn();
+    };
+  });
+
   let personals = $derived(joins.filter((join) => join.type == 'personal'));
   let channels = $derived(joins.filter((join) => join.type == 'channel'));
   let groups = $derived(joins.filter((join) => join.type == 'group'));
+
+  function formatLastSeen(date: Date | null | undefined): string {
+    if (!date) return 'Offline';
+    const diff = Date.now() - new Date(date).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  }
 </script>
 
 <Sidebar.Content class="gap-0">
-  <!-- <Sidebar.Group> -->
-  <!--   <Sidebar.GroupContent> -->
-  <!--     <ScrollArea orientation="horizontal"> -->
-  <!--       <div class="flex gap-4 px-4"> -->
-  <!--         <Avatar.Root> -->
-  <!--           <Avatar.Image src={'/cool.png'} /> -->
-  <!--           <Avatar.Fallback class="rounded-lg"> -->
-  <!--             <UserIcon /> -->
-  <!--           </Avatar.Fallback> -->
-  <!--         </Avatar.Root> -->
-  <!--       </div> -->
-  <!--     </ScrollArea> -->
-  <!--   </Sidebar.GroupContent> -->
-  <!-- </Sidebar.Group> -->
-
   {#if personals.length}
     <CollapsibleSection title="Personal">
-      {#each personals as personal}
+      {#each personals as personal (personal.convId)}
+        {@const onlineUsers = presenceData[personal.convId] ?? []}
+        {@const otherOnline = onlineUsers.some((p: any) => p.key !== user.id)}
         <Sidebar.MenuButton class="h-fit">
           {#snippet child({ props })}
-            <UserListItem href={personal.convId} {...props} {...personal.info} />
+            <UserListItem
+              href={personal.convId}
+              {...props}
+              {...personal.info}
+              isOnline={otherOnline}
+              status={personal.lastMessage ?? (otherOnline ? 'Online' : formatLastSeen(personal.peerLastSeen))}
+            />
           {/snippet}
         </Sidebar.MenuButton>
       {/each}
@@ -50,10 +81,17 @@
 
   {#if channels.length}
     <CollapsibleSection title="Channels">
-      {#each channels as join}
+      {#each channels as ch (ch.convId)}
+        {@const count = (presenceData[ch.convId] ?? []).length}
         <Sidebar.MenuButton class="h-fit">
           {#snippet child({ props })}
-            <UserListItem href={join.convId} {...props} {...join.info} />
+            <UserListItem
+              href={ch.convId}
+              {...props}
+              {...ch.info}
+              onlineCount={count}
+              status={ch.lastMessage}
+            />
           {/snippet}
         </Sidebar.MenuButton>
       {/each}
@@ -62,10 +100,17 @@
 
   {#if groups.length}
     <CollapsibleSection title="Groups">
-      {#each groups as join}
+      {#each groups as grp (grp.convId)}
+        {@const count = (presenceData[grp.convId] ?? []).length}
         <Sidebar.MenuButton class="h-fit">
           {#snippet child({ props })}
-            <UserListItem href={join.convId} {...props} {...join.info} />
+            <UserListItem
+              href={grp.convId}
+              {...props}
+              {...grp.info}
+              onlineCount={count}
+              status={grp.lastMessage}
+            />
           {/snippet}
         </Sidebar.MenuButton>
       {/each}

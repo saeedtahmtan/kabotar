@@ -7,28 +7,45 @@
     href,
     image,
     title,
-    status = 'Hi! what is going on?'
+    status = '',
+    isOnline = false,
+    onlineCount
   }: {
     href: string;
     image: string | null;
     title: string;
-    status?: string;
+    status?: string | null;
+    isOnline?: boolean;
+    onlineCount?: number;
   } = $props();
 </script>
 
 <a
   {href}
-  class=" group flex items-center gap-3 rounded-xl p-3 transition-colors data-[active=true]:bg-sidebar-accent"
+  class="group flex items-center gap-3 rounded-xl p-3 transition-colors data-[active=true]:bg-sidebar-accent"
   data-active={page.url.pathname === `/${href}`}
 >
-  <Avatar.Root class="size-10">
-    <Avatar.Image src={image} />
-    <Avatar.Fallback class="rounded-lg">
-      <UserIcon />
-    </Avatar.Fallback>
-  </Avatar.Root>
-  <div class="flex flex-col">
-    <span class="font-bold">{title}</span>
-    <span class="text-sm text-muted-foreground">{status}</span>
+  <div class="relative size-10 shrink-0">
+    <Avatar.Root class="size-10">
+      <Avatar.Image src={image} />
+      <Avatar.Fallback class="rounded-lg">
+        <UserIcon />
+      </Avatar.Fallback>
+    </Avatar.Root>
+    {#if isOnline}
+      <span class="absolute right-0 bottom-0 size-3 rounded-full border-2 border-sidebar bg-green-500"></span>
+    {/if}
+  </div>
+  <div class="flex min-w-0 flex-col">
+    <span class="truncate font-bold">{title}</span>
+    <span class="truncate text-sm text-muted-foreground">
+      {#if status && onlineCount !== undefined && onlineCount > 0}
+        {status} · {onlineCount} online
+      {:else if status}
+        {status}
+      {:else if onlineCount !== undefined && onlineCount > 0}
+        {onlineCount} online
+      {/if}
+    </span>
   </div>
 </a>
