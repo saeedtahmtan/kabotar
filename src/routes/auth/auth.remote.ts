@@ -1,7 +1,6 @@
 import { form, getRequestEvent } from '$app/server';
 import { auth } from '$lib/server/auth';
-import { db } from '$lib/server/db';
-import { conv } from '$lib/server/db/schema';
+import { createUserConv } from '$lib/server/db/models/conv';
 import { invalid, redirect } from '@sveltejs/kit';
 import { APIError } from 'better-auth/api';
 import { z } from 'zod';
@@ -42,11 +41,7 @@ export const signIn = form(signInSchema, async (input) => {
 
 export const signUp = form(signUpSchema, async (input) => {
   try {
-    await db.insert(conv).values({
-      id: input.username,
-      type: 'user',
-      private: true
-    });
+    await createUserConv(input.username);
 
     await auth.api.signUpEmail({
       body: {

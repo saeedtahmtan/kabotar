@@ -1,17 +1,9 @@
 // realtime-allow-public
-import { db } from '$lib/server/db';
-import { join, message } from '$lib/server/db/schema';
+import { createMessageWithFiles, deleteMessage, getMessages, touchJoinUpdatedAt } from '$lib/server/db/models/message';
 import { binaryDecode as b } from '$lib/utils';
-import { and, desc, eq, lt } from 'drizzle-orm';
 import { live, LiveError, type LiveContext } from 'svelte-realtime';
-
-import { env } from '$env/dynamic/private';
 import { rollDice } from '$lib/server/live/chat.dice';
-import { randomUUID } from 'crypto';
 import { htmlEscape } from 'escape-goat';
-import { fileTypeFromBuffer } from 'file-type';
-import { unlink, writeFile } from 'fs/promises';
-import path from 'path';
 
 export const msgSend = live.binary(async (ctx: LiveContext<any>, buffer) => {
   const [convId, data, filesBuffer] = b(buffer, ['string', 'string', 'buffer']) as [
@@ -27,55 +19,13 @@ export const msgSend = live.binary(async (ctx: LiveContext<any>, buffer) => {
 
   cleanText = rollDice(cleanText);
 
-  const uploadedFiles: {
-    name: string;
-    pathname: string;
-    size: number;
-    mime: string;
-    ext: string;
-  }[] = [];
-
   try {
-    for (const fileBuffer of files) {
-      const detectedType = await fileTypeFromBuffer(Buffer.from(fileBuffer));
-      const mime = detectedType?.mime || 'application/octet-stream';
-      const ext = detectedType?.ext || 'bin';
-
-      const name = `${randomUUID()}.${ext}`;
-      const pathname = path.join(env.STORAGE_LOCATION, name);
-      await writeFile(pathname, Buffer.from(fileBuffer));
-
-      uploadedFiles.push({
-        name,
-        pathname,
-        size: fileBuffer.byteLength,
-        mime,
-        ext
-      });
-    }
-
-    const [result] = await db
-      .insert(message)
-      .values({
-        userId: ctx.user.id,
-        convId,
-        meta: JSON.stringify({
-          type: 'message',
-          files: uploadedFiles
-        }),
-        data: cleanText
-      })
-      .returning();
+    const result = await createMessageWithFiles(ctx.user.id, convId, cleanText, files);
 
     if (!result) throw new LiveError('Insert failed', 'NO_RETURN');
 
     ctx.publish(`msg:${convId}`, 'created', result);
   } catch (err) {
-    for (const file of uploadedFiles) {
-      await unlink(file.pathname).catch((e) =>
-        console.error('Failed to delete file:', file.pathname, e)
-      );
-    }
     if ((err as { code?: string })?.code?.startsWith?.('SQLITE_CONSTRAINT')) {
       throw new LiveError('Invalid conversation or user', 'CONSTRAINT');
     }
@@ -84,46 +34,20 @@ export const msgSend = live.binary(async (ctx: LiveContext<any>, buffer) => {
 });
 
 export const msgDelete = live(async (ctx: LiveContext<any>, convId: string, id: string) => {
-  const result = await db
-    .delete(message)
-    .where(and(eq(message.id, id), eq(message.convId, convId), eq(message.userId, ctx.user.id)));
+  const result = await deleteMessage(id, convId, ctx.user.id);
 
   if (result.rowsAffected > 0) ctx.publish(`msg:${convId}`, 'deleted', { id });
 });
 
 export const msgStream = live.stream(
   (ctx, convId) => `msg:${convId}`,
-  async (ctx, convId) => {
-    const limit = 30;
-    const cursor = ctx.cursor as string | null;
-
-    let conditions = [eq(message.convId, convId)];
-    if (cursor) {
-      conditions.push(lt(message.createdAt, new Date(cursor)));
-    }
-
-    const query = db
-      .select()
-      .from(message)
-      .where(and(...conditions))
-      .orderBy(desc(message.createdAt))
-      .limit(limit + 1);
-
-    const rows = await query;
-    const hasMore = rows.length > limit;
-    const data = hasMore ? rows.slice(0, limit) : rows;
-    const nextCursor = hasMore ? data.at(-1)!.createdAt.toISOString() : null;
-
-    return { data, hasMore, cursor: nextCursor };
-  },
+  async (ctx, convId) => getMessages(convId, ctx.cursor as string | null),
   {
     merge: 'crud',
     key: 'id',
     async onSubscribe(ctx, topic) {
       const convId = topic.slice(4);
-      db.update(join)
-        .set({ updatedAt: new Date() })
-        .where(and(eq(join.convId, convId), eq(join.userId, ctx.user.id)));
+      await touchJoinUpdatedAt(convId, ctx.user.id);
     }
   }
 );
