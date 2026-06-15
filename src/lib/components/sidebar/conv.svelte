@@ -2,6 +2,7 @@
   import * as Avatar from '$lib/components/ui/avatar';
   import { UserIcon } from '@lucide/svelte';
   import { page } from '$app/state';
+  import { nFormat } from '$lib/utils';
 
   let {
     href,
@@ -9,7 +10,8 @@
     title,
     status = '',
     isOnline = false,
-    onlineCount
+    onlineCount,
+    convType
   }: {
     href: string;
     image: string | null;
@@ -17,6 +19,7 @@
     status?: string | null;
     isOnline?: boolean;
     onlineCount?: number;
+    convType?: string;
   } = $props();
 </script>
 
@@ -33,18 +36,17 @@
       </Avatar.Fallback>
     </Avatar.Root>
     {#if isOnline}
-      <span class="absolute right-0 bottom-0 size-3 rounded-full border-2 border-sidebar bg-green-500"></span>
+      <span class="absolute right-0 bottom-0 size-3 rounded-full border-2 border-sidebar bg-sidebar-primary"></span>
+    {/if}
+    {#if convType === 'group' && onlineCount !== undefined && onlineCount > 0}
+      <span class="absolute right-0 bottom-0 text-xs font-bold text-sidebar-primary">{nFormat(onlineCount)}</span>
     {/if}
   </div>
   <div class="flex min-w-0 flex-col">
     <span class="truncate font-bold">{title}</span>
     <span class="truncate text-sm text-muted-foreground">
-      {#if status && onlineCount !== undefined && onlineCount > 0}
-        {status} · {onlineCount} online
-      {:else if status}
+      {#if status}
         {status}
-      {:else if onlineCount !== undefined && onlineCount > 0}
-        {onlineCount} online
       {/if}
     </span>
   </div>

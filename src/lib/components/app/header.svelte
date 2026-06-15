@@ -27,7 +27,7 @@
       {/if}
     </Avatar.Fallback>
   </Avatar.Root>
-  <div class="flex h-full flex-col">
+  <div class="flex flex-col">
     <span class="text-base/tight font-bold">
       {#if title}
         {title}

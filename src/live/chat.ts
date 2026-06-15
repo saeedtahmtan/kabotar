@@ -5,16 +5,20 @@ import { binaryDecode as b } from '$lib/utils';
 import { and, desc, eq, lt } from 'drizzle-orm';
 import { live, LiveError, type LiveContext } from 'svelte-realtime';
 
-import { rollDice } from '$lib/server/live/chat.dice';
-import { htmlEscape } from 'escape-goat';
-import { randomUUID } from 'crypto';
-import { fileTypeFromBuffer } from 'file-type';
 import { env } from '$env/dynamic/private';
+import { rollDice } from '$lib/server/live/chat.dice';
+import { randomUUID } from 'crypto';
+import { htmlEscape } from 'escape-goat';
+import { fileTypeFromBuffer } from 'file-type';
 import { unlink, writeFile } from 'fs/promises';
 import path from 'path';
 
 export const msgSend = live.binary(async (ctx: LiveContext<any>, buffer) => {
-  const [convId, data, filesBuffer] = b(buffer, ['string', 'string', 'buffer']) as [string, string, ArrayBuffer];
+  const [convId, data, filesBuffer] = b(buffer, ['string', 'string', 'buffer']) as [
+    string,
+    string,
+    ArrayBuffer
+  ];
   const files = b(filesBuffer, ['buffer']) as ArrayBuffer[];
 
   let cleanText = htmlEscape(data.trim());
@@ -23,7 +27,13 @@ export const msgSend = live.binary(async (ctx: LiveContext<any>, buffer) => {
 
   cleanText = rollDice(cleanText);
 
-  const uploadedFiles: { name: string; pathname: string; size: number, mime: string, ext: string }[] = [];
+  const uploadedFiles: {
+    name: string;
+    pathname: string;
+    size: number;
+    mime: string;
+    ext: string;
+  }[] = [];
 
   try {
     for (const fileBuffer of files) {
@@ -51,9 +61,9 @@ export const msgSend = live.binary(async (ctx: LiveContext<any>, buffer) => {
         convId,
         meta: JSON.stringify({
           type: 'message',
-          files: uploadedFiles,
+          files: uploadedFiles
         }),
-        data: cleanText,
+        data: cleanText
       })
       .returning();
 
@@ -62,7 +72,9 @@ export const msgSend = live.binary(async (ctx: LiveContext<any>, buffer) => {
     ctx.publish(`msg:${convId}`, 'created', result);
   } catch (err) {
     for (const file of uploadedFiles) {
-      await unlink(file.pathname).catch(e => console.error('Failed to delete file:', file.pathname, e));
+      await unlink(file.pathname).catch((e) =>
+        console.error('Failed to delete file:', file.pathname, e)
+      );
     }
     if ((err as { code?: string })?.code?.startsWith?.('SQLITE_CONSTRAINT')) {
       throw new LiveError('Invalid conversation or user', 'CONSTRAINT');
@@ -85,16 +97,17 @@ export const msgStream = live.stream(
     const limit = 30;
     const cursor = ctx.cursor as string | null;
 
+    let conditions = [eq(message.convId, convId)];
+    if (cursor) {
+      conditions.push(lt(message.createdAt, new Date(cursor)));
+    }
+
     const query = db
       .select()
       .from(message)
-      .where(eq(message.convId, convId))
+      .where(and(...conditions))
       .orderBy(desc(message.createdAt))
       .limit(limit + 1);
-
-    if (cursor) {
-      query.where(lt(message.createdAt, new Date(cursor)));
-    }
 
     const rows = await query;
     const hasMore = rows.length > limit;
@@ -106,12 +119,11 @@ export const msgStream = live.stream(
   {
     merge: 'crud',
     key: 'id',
-    onSubscribe(ctx, topic) {
+    async onSubscribe(ctx, topic) {
       const convId = topic.slice(4);
       db.update(join)
         .set({ updatedAt: new Date() })
-        .where(and(eq(join.convId, convId), eq(join.userId, ctx.user.id)))
-        .run();
+        .where(and(eq(join.convId, convId), eq(join.userId, ctx.user.id)));
     }
   }
 );

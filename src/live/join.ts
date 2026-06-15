@@ -21,6 +21,7 @@ export type joinStream = {
   peerLastSeen: Date | null;
   lastMessage: string | null;
   isSelf: boolean;
+  memberCount: number;
   info: {
     title: string;
     image: string | null;
@@ -224,6 +225,9 @@ export const joinStream = live.stream(
       )
     `,
     isSelf: sql<boolean>`${join.userId} = ${join.infoId}`,
+    memberCount: sql<number>`
+      (SELECT COUNT(*) FROM "join" AS j2 WHERE j2.conv_id = ${join.convId})
+    `,
     info: {
       title: sql<string>`COALESCE(${user.name}, ${info.title})`,
       image: sql<string | null>`COALESCE(${user.image}, ${info.image})`

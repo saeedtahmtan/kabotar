@@ -11,7 +11,7 @@
   import { presence } from '$live/presence';
   import { status as wsStatus } from 'svelte-adapter-uws/client';
   import { beforeNavigate } from '$app/navigation';
-  import { binaryEncode as b } from '$lib/utils';
+  import { binaryEncode as b, nFormat, formatLastSeen } from '$lib/utils';
   // TODO need to be typed correctly
 
   const conv = $derived(page.params.conv ?? '');
@@ -23,11 +23,11 @@
     hasMore = streamStore.hasMore;
   });
   let sidebarOpen = $state(false);
-  const [selectedJoin] = $derived(
-    $joinStream?.filter((join: any) => join.convId == conv) ?? []
-  );
+  const [selectedJoin] = $derived($joinStream?.filter((join: any) => join.convId == conv) ?? []);
   const onlineCount = $derived(
-    selectedJoin ? [...new Map(($convPresence ?? []).map((p: any) => [p.key, p])).values()].length : 0
+    selectedJoin
+      ? [...new Map(($convPresence ?? []).map((p: any) => [p.key, p])).values()].length
+      : 0
   );
   const headerState = $derived.by(() => {
     if ($wsStatus !== 'open') return 'Reconnecting...';
@@ -39,6 +39,9 @@
       const lastSeen = (selectedJoin as any)?.peerLastSeen;
       if (lastSeen) return formatLastSeen(new Date(lastSeen));
       return 'Offline';
+    }
+    if (selectedJoin.type === 'channel') {
+      return `${nFormat((selectedJoin as any).memberCount)} members`;
     }
     return `${onlineCount} online`;
   });
@@ -69,18 +72,6 @@
   beforeNavigate(() => {
     sidebarOpen = false;
   });
-
-  function formatLastSeen(date: Date): string {
-    const now = Date.now();
-    const diff = now - date.getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'Just now';
-    if (mins < 60) return `${mins}m ago`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
-  }
 </script>
 
 <div

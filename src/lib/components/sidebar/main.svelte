@@ -8,6 +8,7 @@
   import { Button } from '../ui/button';
   import { presence } from '$live/presence';
   import type { joinStream } from '../../../live/join';
+  import { formatLastSeen } from '$lib/utils';
 
   const {
     joins,
@@ -44,18 +45,6 @@
   let personals = $derived(joins.filter((join) => join.type == 'personal'));
   let channels = $derived(joins.filter((join) => join.type == 'channel'));
   let groups = $derived(joins.filter((join) => join.type == 'group'));
-
-  function formatLastSeen(date: Date | null | undefined): string {
-    if (!date) return 'Offline';
-    const diff = Date.now() - new Date(date).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'Just now';
-    if (mins < 60) return `${mins}m ago`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
-  }
 </script>
 
 <Sidebar.Content class="gap-0">
@@ -70,8 +59,10 @@
               href={personal.convId}
               {...props}
               {...personal.info}
+              convType="personal"
               isOnline={otherOnline}
-              status={personal.lastMessage ?? (otherOnline ? 'Online' : formatLastSeen(personal.peerLastSeen))}
+              status={personal.lastMessage ??
+                (otherOnline ? 'Online' : formatLastSeen(personal.peerLastSeen))}
             />
           {/snippet}
         </Sidebar.MenuButton>
@@ -89,7 +80,7 @@
               href={ch.convId}
               {...props}
               {...ch.info}
-              onlineCount={count}
+              convType="channel"
               status={ch.lastMessage}
             />
           {/snippet}
@@ -108,6 +99,7 @@
               href={grp.convId}
               {...props}
               {...grp.info}
+              convType="group"
               onlineCount={count}
               status={grp.lastMessage}
             />

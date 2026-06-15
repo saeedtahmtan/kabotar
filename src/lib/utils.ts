@@ -1,5 +1,17 @@
 import { clsx, type ClassValue } from 'clsx';
+import { formatDistanceToNow } from 'date-fns';
 import { twMerge } from 'tailwind-merge';
+
+export function nFormat(n: number): string {
+  return new Intl.NumberFormat('en', { notation: 'compact' }).format(n);
+}
+
+export function formatLastSeen(date: Date | null | undefined): string {
+  if (!date) return 'Offline';
+  return formatDistanceToNow(date, {
+    addSuffix: true
+  });
+}
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -12,10 +24,7 @@ export type WithoutChildren<T> = T extends { children?: any } ? Omit<T, 'childre
 export type WithoutChildrenOrChild<T> = WithoutChildren<WithoutChild<T>>;
 export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & { ref?: U | null };
 
-
-export type BinaryStruct =
-  'string' | 'number' | 'buffer' | 'date' | 'boolean'
-
+export type BinaryStruct = 'string' | 'number' | 'buffer' | 'date' | 'boolean';
 
 export type BinaryData = string | number | ArrayBuffer | Date | boolean;
 
