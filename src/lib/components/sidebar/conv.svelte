@@ -36,10 +36,14 @@
       </Avatar.Fallback>
     </Avatar.Root>
     {#if isOnline}
-      <span class="absolute right-0 bottom-0 size-3 rounded-full border-2 border-sidebar bg-sidebar-primary"></span>
+      <span
+        class="absolute right-0 bottom-0 size-3 rounded-full border-2 border-sidebar bg-sidebar-primary"
+      ></span>
     {/if}
     {#if convType === 'group' && onlineCount !== undefined && onlineCount > 0}
-      <span class="absolute right-0 bottom-0 text-xs font-bold text-sidebar-primary">{nFormat(onlineCount)}</span>
+      <span class="absolute right-0 bottom-0 text-xs font-bold text-sidebar-primary"
+        >{nFormat(onlineCount)}</span
+      >
     {/if}
   </div>
   <div class="flex min-w-0 flex-col">

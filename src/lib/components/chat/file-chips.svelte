@@ -28,10 +28,16 @@
 
   function onMove(e: PointerEvent) {
     dragPos = { x: e.clientX, y: e.clientY };
-    if (!trashRef) { hoveredTrash = false; return; }
+    if (!trashRef) {
+      hoveredTrash = false;
+      return;
+    }
     const rect = trashRef.getBoundingClientRect();
-    hoveredTrash = e.clientX >= rect.left && e.clientX <= rect.right &&
-      e.clientY >= rect.top && e.clientY <= rect.bottom;
+    hoveredTrash =
+      e.clientX >= rect.left &&
+      e.clientX <= rect.right &&
+      e.clientY >= rect.top &&
+      e.clientY <= rect.bottom;
   }
 
   function onUp() {
@@ -72,10 +78,7 @@
 
 {#if showTrash}
   <div class="absolute inset-0 z-40 bg-black/40"></div>
-  <div
-    bind:this={trashRef}
-    class="absolute inset-0 z-50 m-auto flex h-min w-min justify-center"
-  >
+  <div bind:this={trashRef} class="absolute inset-0 z-50 m-auto flex h-min w-min justify-center">
     <div
       class="flex w-max flex-col items-center justify-center rounded-xl bg-red-500 p-4 shadow-lg transition-transform"
       class:scale-125={hoveredTrash}

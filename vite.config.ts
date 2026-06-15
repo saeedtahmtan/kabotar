@@ -13,6 +13,6 @@ export default defineConfig({
     devtoolsJson(),
     paraglideVitePlugin({ project: './project.inlang', outdir: './src/lib/paraglide' }),
     uws(),
-    realtime(),
+    realtime()
   ]
 });

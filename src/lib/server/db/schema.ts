@@ -1,5 +1,5 @@
 import { relations, sql } from 'drizzle-orm';
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { user } from './auth.schema';
 
 export const info = sqliteTable('info', {
@@ -39,8 +39,7 @@ export const join = sqliteTable('join', {
   convId: text('conv_id')
     .notNull()
     .references(() => conv.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
-  infoId: text('info_id')
-    .notNull(),
+  infoId: text('info_id').notNull(),
   banned: integer('banned', { mode: 'boolean' }).default(false),
   banReason: text('ban_reason'),
   banExpires: integer('ban_expires', { mode: 'timestamp_ms' }),

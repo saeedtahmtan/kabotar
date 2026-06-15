@@ -80,7 +80,13 @@
             const blob = new Blob(audioChunks, { type: 'audio/webm' });
             const buffer = await blob.arrayBuffer();
             files = [
-              { name: 'Voice message.webm', size: blob.size, mime: 'audio/webm', ext: 'webm', buffer }
+              {
+                name: 'Voice message.webm',
+                size: blob.size,
+                mime: 'audio/webm',
+                ext: 'webm',
+                buffer
+              }
             ];
           }
           cleanupRecording();
@@ -211,7 +217,10 @@
     if (!textarea) return;
     const trimmedValue = textarea.value.trim();
     if (trimmedValue.length === 0) return;
-    onSubmit(trimmedValue, files.map(f => f.buffer));
+    onSubmit(
+      trimmedValue,
+      files.map((f) => f.buffer)
+    );
     files = [];
     value = '';
 
@@ -267,7 +276,7 @@
 </script>
 
 <div class="flex w-full flex-col gap-1">
-  <FileChips {files} onRemove={(i) => files = files.filter((_, j) => j !== i)} />
+  <FileChips {files} onRemove={(i) => (files = files.filter((_, j) => j !== i))} />
   <InputGroup.Root class="items-end bg-sidebar shadow-sm backdrop-blur-md [--spacing:0.3rem]">
     {#if isRecording}
       <div

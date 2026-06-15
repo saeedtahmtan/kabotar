@@ -3,8 +3,6 @@
   import Register from './register.svelte';
   import Login from './login.svelte';
   import { BirdIcon } from '@lucide/svelte';
-
-
 </script>
 
 <div class="flex h-screen w-screen flex-col items-center justify-center gap-5">

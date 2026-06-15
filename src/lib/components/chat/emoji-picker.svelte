@@ -73,7 +73,7 @@
   });
 </script>
 
-<Popover.Root bind:open={open}>
+<Popover.Root bind:open>
   <Popover.Trigger>
     {#snippet child({ props })}
       <InputGroup.Button {...props}>

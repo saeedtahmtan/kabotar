@@ -7,8 +7,6 @@
   import * as Tabs from '$lib/components/ui/tabs';
   import ToggleTheme from '$lib/components/toggle-theme.svelte';
   import { signUp } from './auth.remote.ts';
-
-
 </script>
 
 <Tabs.Content value="register">

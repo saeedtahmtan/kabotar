@@ -24,6 +24,6 @@ export const auth = betterAuth({
 
 export function requireAuth() {
   const { locals } = getRequestEvent();
-  if (!locals.user) redirect(307, '/auth')
+  if (!locals.user) redirect(307, '/auth');
   return locals.user;
 }

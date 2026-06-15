@@ -5,7 +5,6 @@ import { invalid, redirect } from '@sveltejs/kit';
 import { APIError } from 'better-auth/api';
 import { z } from 'zod';
 
-
 const signInSchema = z.object({
   username: z.string().min(1, 'Username required'),
   password: z.string().min(1, 'Password required')
@@ -26,7 +25,8 @@ export const signIn = form(signInSchema, async (input) => {
   try {
     await auth.api.signInEmail({
       body: {
-        email: `${username}@temp.com`, password,
+        email: `${username}@temp.com`,
+        password
       }
     });
   } catch (error) {

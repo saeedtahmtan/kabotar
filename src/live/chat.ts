@@ -1,9 +1,14 @@
 // realtime-allow-public
-import { createMessageWithFiles, deleteMessage, getMessages, touchJoinUpdatedAt } from '$lib/server/db/models/message';
-import { binaryDecode as b } from '$lib/utils';
-import { live, LiveError, type LiveContext } from 'svelte-realtime';
+import {
+  createMessageWithFiles,
+  deleteMessage,
+  getMessages,
+  touchJoinUpdatedAt
+} from '$lib/server/db/models/message';
 import { rollDice } from '$lib/server/live/chat.dice';
+import { binaryDecode as b } from '$lib/utils';
 import { htmlEscape } from 'escape-goat';
+import { live, LiveError, type LiveContext } from 'svelte-realtime';
 
 export const msgSend = live.binary(async (ctx: LiveContext<any>, buffer) => {
   const [convId, data, filesBuffer] = b(buffer, ['string', 'string', 'buffer']) as [

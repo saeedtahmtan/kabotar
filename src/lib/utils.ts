@@ -24,4 +24,4 @@ export type WithoutChildren<T> = T extends { children?: any } ? Omit<T, 'childre
 export type WithoutChildrenOrChild<T> = WithoutChildren<WithoutChild<T>>;
 export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & { ref?: U | null };
 
-export { binaryEncode, binaryDecode, type BinaryStruct, type BinaryData } from '$lib/binary';
+export { binaryDecode, binaryEncode, type BinaryData, type BinaryStruct } from '$lib/binary';

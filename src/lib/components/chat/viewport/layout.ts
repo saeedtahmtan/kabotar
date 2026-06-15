@@ -141,7 +141,7 @@ export function computeAllMessagesLayout(
       isSingleEmoji: msg.isSingleEmoji,
       animatedUrl: msg.animatedUrl,
       isSlotMachine: msg.isSlotMachine,
-      slotMachine: msg.slotMachine,
+      slotMachine: msg.slotMachine
     });
 
     pointer++;

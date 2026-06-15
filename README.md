@@ -38,26 +38,27 @@ npm run dev
 
 ### Environment Variables
 
-| Variable | Description |
-|---|---|
-| `DATABASE_URL` | SQLite database path (e.g., `file:local.db`) |
-| `BETTER_AUTH_SECRET` | better-auth secret key |
-| `BETTER_AUTH_URL` | Application URL (e.g., `http://localhost:5173`) |
-| `UUID_DATABASE_ID` | UUID v5 namespace for deterministic IDs |
+| Variable             | Description                                     |
+| -------------------- | ----------------------------------------------- |
+| `DATABASE_URL`       | SQLite database path (e.g., `file:local.db`)    |
+| `BETTER_AUTH_SECRET` | better-auth secret key                          |
+| `ORIGIN`             | Application URL (e.g., `http://localhost:5173`) |
+| `UUID_DATABASE_ID`   | UUID v5 namespace for deterministic IDs         |
 
 ## Scripts
 
-| Command | Description |
-|---|---|
-| `npm run dev` | Start dev server |
-| `npm run build` | Production build |
-| `npm run preview` | Preview production build |
-| `npm run check` | Run svelte-check |
-| `npm run lint` | Run ESLint |
-| `npm run db:push` | Push schema to database |
-| `npm run db:studio` | Open Drizzle Studio |
-| `npm run db:generate` | Generate SQL migration |
-| `npm run db:migrate` | Run generated SQL migrations |
+| Command               | Description                  |
+| --------------------- | ---------------------------- |
+| `npm run dev`         | Start dev server             |
+| `npm run build`       | Production build             |
+| `npm run preview`     | Preview production build     |
+| `npm run check`       | Run svelte-check             |
+| `npm run lint`        | Run ESLint                   |
+| `npm run format`      | Format code with Prettier    |
+| `npm run db:push`     | Push schema to database      |
+| `npm run db:studio`   | Open Drizzle Studio          |
+| `npm run db:generate` | Generate SQL migration       |
+| `npm run db:migrate`  | Run generated SQL migrations |
 
 ## Docker
 
@@ -76,3 +77,7 @@ docker run -v ./data:/app/data \
 ```
 
 The schema is pushed automatically at container startup. SQLite data is stored in the mounted `./data` directory.
+
+## More
+
+See the [wiki](wiki/getting-started.md) for detailed setup instructions and project structure.

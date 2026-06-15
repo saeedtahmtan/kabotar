@@ -12,7 +12,9 @@
   }: { image?: string; title?: string; state: string; type: string } = $props();
 </script>
 
-<header class="flex items-center gap-2 border-input bg-sidebar p-2 border-b sm:rounded-2xl sm:border">
+<header
+  class="flex items-center gap-2 border-b border-input bg-sidebar p-2 sm:rounded-2xl sm:border"
+>
   <SidebarTrigger class="p-5">
     <PanelLeft class="hidden sm:block" />
     <ArrowLeft class="sm:hidden" />

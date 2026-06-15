@@ -2,30 +2,38 @@
 // Provides client-side types for $live/ imports
 
 declare module '$live/chat' {
-  import type { StreamStore, RpcError } from 'svelte-realtime/client';
+  import type { RpcError, StreamStore } from 'svelte-realtime/client';
   import type { Readable } from 'svelte/store';
 
   export const msgDelete: (convId: string, id: string) => Promise<any>;
-  export const msgStream: ((convId) => StreamStore<any | undefined | { error: RpcError }>) & { load(platform: any, options?: { args?: any[]; user?: any }): Promise<any> };
+  export const msgStream: ((convId) => StreamStore<any | undefined | { error: RpcError }>) & {
+    load(platform: any, options?: { args?: any[]; user?: any }): Promise<any>;
+  };
   export const msgSend: (buffer: ArrayBuffer | ArrayBufferView, ...args: any[]) => Promise<any>;
   export const empty: Readable<undefined>;
 }
 
 declare module '$live/join' {
-  import type { StreamStore, RpcError } from 'svelte-realtime/client';
+  import type { RpcError, StreamStore } from 'svelte-realtime/client';
   import type { Readable } from 'svelte/store';
 
   export const joinCreate: (convId: string) => Promise<any>;
   export const channelCreate: (name: string, identifier?: string) => Promise<any>;
   export const groupCreate: (name: string, identifier?: string) => Promise<any>;
-  export const joinStream: StreamStore<any | undefined | { error: RpcError }> & { load(platform: any, options?: { args?: any[]; user?: any }): Promise<any> };
+  export const joinStream: StreamStore<any | undefined | { error: RpcError }> & {
+    load(platform: any, options?: { args?: any[]; user?: any }): Promise<any>;
+  };
   export const empty: Readable<undefined>;
 }
 
 declare module '$live/presence' {
-  import type { StreamStore, RpcError } from 'svelte-realtime/client';
+  import type { RpcError, StreamStore } from 'svelte-realtime/client';
   import type { Readable } from 'svelte/store';
 
-  export const presence: ((convId: string) => StreamStore<any | undefined | { error: RpcError }>) & { load(platform: any, options?: { args?: any[]; user?: any }): Promise<any> };
+  export const presence: ((
+    convId: string
+  ) => StreamStore<any | undefined | { error: RpcError }>) & {
+    load(platform: any, options?: { args?: any[]; user?: any }): Promise<any>;
+  };
   export const empty: Readable<undefined>;
 }

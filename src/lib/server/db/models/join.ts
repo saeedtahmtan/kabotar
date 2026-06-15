@@ -1,6 +1,6 @@
+import { and, eq, sql } from 'drizzle-orm';
 import { db } from '..';
 import { conv, info, join, message, user } from '../schema';
-import { and, eq, sql } from 'drizzle-orm';
 
 export async function findUserByUsername(username: string) {
   return db.query.user.findFirst({ where: eq(user.username, username) });
@@ -45,12 +45,7 @@ export async function createPersonalDM(
   });
 }
 
-export async function createJoin(
-  convId: string,
-  userId: string,
-  type: string,
-  infoId: string
-) {
+export async function createJoin(convId: string, userId: string, type: string, infoId: string) {
   const [row] = await db.insert(join).values({ convId, userId, type, infoId }).returning();
   return row;
 }

@@ -1,15 +1,15 @@
 // realtime-allow-public
-import { findConv, createConv } from '$lib/server/db/models/conv';
+import { env } from '$env/dynamic/private';
+import { createConv, findConv } from '$lib/server/db/models/conv';
 import { createInfo } from '$lib/server/db/models/info';
 import {
-  findUserByUsername,
-  findExistingJoin,
-  getExistingInfoId,
-  createPersonalDM,
   createJoin,
+  createPersonalDM,
+  findExistingJoin,
+  findUserByUsername,
+  getExistingInfoId,
   getJoinsForUser
 } from '$lib/server/db/models/join';
-import { env } from '$env/dynamic/private';
 import { live, LiveError, type LiveContext } from 'svelte-realtime';
 import { v5 as uuidv5 } from 'uuid';
 
@@ -66,9 +66,10 @@ export const joinCreate = live(async (ctx: LiveContext<any>, convId: string) => 
       type: insertedConv.type,
       convUpdatedAt: insertedConv.updatedAt,
       joinUpdatedAt: join.updatedAt,
-      info: join.userId === ctx.user.id
-        ? { title: targetUser.name, image: targetUser.image }
-        : { title: ctx.user.name, image: ctx.user.image }
+      info:
+        join.userId === ctx.user.id
+          ? { title: targetUser.name, image: targetUser.image }
+          : { title: ctx.user.name, image: ctx.user.image }
     }));
 
     result.forEach((join) => {
@@ -85,7 +86,12 @@ export const joinCreate = live(async (ctx: LiveContext<any>, convId: string) => 
     const resolvedInfoId = await getExistingInfoId(convId);
     const channelInfo = resolvedInfoId ? await createInfo(resolvedInfoId, '', null) : null;
 
-    const insertedJoin = await createJoin(convId, ctx.user.id, targetConv.type, resolvedInfoId ?? convId);
+    const insertedJoin = await createJoin(
+      convId,
+      ctx.user.id,
+      targetConv.type,
+      resolvedInfoId ?? convId
+    );
 
     ctx.publish(`join:${ctx.user.id}`, 'created', {
       ...insertedJoin,
@@ -100,51 +106,57 @@ export const joinCreate = live(async (ctx: LiveContext<any>, convId: string) => 
   }
 });
 
-export const channelCreate = live(async (ctx: LiveContext<any>, name: string, identifier?: string) => {
-  const isPublic = !!identifier;
-  const convId = identifier || crypto.randomUUID();
+export const channelCreate = live(
+  async (ctx: LiveContext<any>, name: string, identifier?: string) => {
+    const isPublic = !!identifier;
+    const convId = identifier || crypto.randomUUID();
 
-  const existingConv = await findConv(convId);
-  if (existingConv) return new LiveError('CONFLICT', 'a conversation with this identifier already exists');
+    const existingConv = await findConv(convId);
+    if (existingConv)
+      return new LiveError('CONFLICT', 'a conversation with this identifier already exists');
 
-  const insertedInfo = await createInfo(crypto.randomUUID(), name, null);
-  const insertedConv = await createConv(convId, 'channel', !isPublic);
-  const insertedJoin = await createJoin(convId, ctx.user.id, 'channel', insertedInfo.id);
+    const insertedInfo = await createInfo(crypto.randomUUID(), name, null);
+    const insertedConv = await createConv(convId, 'channel', !isPublic);
+    const insertedJoin = await createJoin(convId, ctx.user.id, 'channel', insertedInfo.id);
 
-  ctx.publish(`join:${ctx.user.id}`, 'created', {
-    ...insertedJoin,
-    joinedAt: insertedJoin.createdAt,
-    joinUpdatedAt: insertedJoin.updatedAt,
-    convUpdatedAt: insertedConv.updatedAt,
-    info: {
-      title: insertedInfo.title,
-      image: insertedInfo.image
-    }
-  });
-});
+    ctx.publish(`join:${ctx.user.id}`, 'created', {
+      ...insertedJoin,
+      joinedAt: insertedJoin.createdAt,
+      joinUpdatedAt: insertedJoin.updatedAt,
+      convUpdatedAt: insertedConv.updatedAt,
+      info: {
+        title: insertedInfo.title,
+        image: insertedInfo.image
+      }
+    });
+  }
+);
 
-export const groupCreate = live(async (ctx: LiveContext<any>, name: string, identifier?: string) => {
-  const isPublic = !!identifier;
-  const convId = identifier || crypto.randomUUID();
+export const groupCreate = live(
+  async (ctx: LiveContext<any>, name: string, identifier?: string) => {
+    const isPublic = !!identifier;
+    const convId = identifier || crypto.randomUUID();
 
-  const existingConv = await findConv(convId);
-  if (existingConv) return new LiveError('CONFLICT', 'a conversation with this identifier already exists');
+    const existingConv = await findConv(convId);
+    if (existingConv)
+      return new LiveError('CONFLICT', 'a conversation with this identifier already exists');
 
-  const insertedInfo = await createInfo(crypto.randomUUID(), name, null);
-  const insertedConv = await createConv(convId, 'group', !isPublic);
-  const insertedJoin = await createJoin(convId, ctx.user.id, 'group', insertedInfo.id);
+    const insertedInfo = await createInfo(crypto.randomUUID(), name, null);
+    const insertedConv = await createConv(convId, 'group', !isPublic);
+    const insertedJoin = await createJoin(convId, ctx.user.id, 'group', insertedInfo.id);
 
-  ctx.publish(`join:${ctx.user.id}`, 'created', {
-    ...insertedJoin,
-    joinedAt: insertedJoin.createdAt,
-    joinUpdatedAt: insertedJoin.updatedAt,
-    convUpdatedAt: insertedConv.updatedAt,
-    info: {
-      title: insertedInfo.title,
-      image: insertedInfo.image
-    }
-  });
-});
+    ctx.publish(`join:${ctx.user.id}`, 'created', {
+      ...insertedJoin,
+      joinedAt: insertedJoin.createdAt,
+      joinUpdatedAt: insertedJoin.updatedAt,
+      convUpdatedAt: insertedConv.updatedAt,
+      info: {
+        title: insertedInfo.title,
+        image: insertedInfo.image
+      }
+    });
+  }
+);
 
 export const joinStream = live.stream(
   (ctx) => `join:${ctx.user.id}`,

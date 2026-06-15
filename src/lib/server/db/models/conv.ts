@@ -1,6 +1,6 @@
+import { eq } from 'drizzle-orm';
 import { db } from '..';
 import { conv } from '../schema';
-import { eq } from 'drizzle-orm';
 
 export async function findConv(id: string) {
   return db.query.conv.findFirst({ where: eq(conv.id, id) });

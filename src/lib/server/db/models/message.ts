@@ -1,22 +1,14 @@
-import { db } from '..';
-import { join, message } from '../schema';
-import { and, desc, eq, lt } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import { randomUUID } from 'crypto';
+import { and, desc, eq, lt } from 'drizzle-orm';
 import { fileTypeFromBuffer } from 'file-type';
 import { unlink, writeFile } from 'fs/promises';
 import path from 'path';
+import { db } from '..';
+import { join, message } from '../schema';
 
-export async function createMessage(
-  userId: string,
-  convId: string,
-  data: string,
-  meta: string
-) {
-  const [row] = await db
-    .insert(message)
-    .values({ userId, convId, data, meta })
-    .returning();
+export async function createMessage(userId: string, convId: string, data: string, meta: string) {
+  const [row] = await db.insert(message).values({ userId, convId, data, meta }).returning();
   return row;
 }
 
@@ -45,9 +37,7 @@ async function uploadFiles(files: ArrayBuffer[]): Promise<UploadedFile[]> {
 }
 
 async function cleanupFiles(files: UploadedFile[]) {
-  await Promise.all(
-    files.map((f) => unlink(f.pathname).catch(() => {}))
-  );
+  await Promise.all(files.map((f) => unlink(f.pathname).catch(() => {})));
 }
 
 export async function createMessageWithFiles(

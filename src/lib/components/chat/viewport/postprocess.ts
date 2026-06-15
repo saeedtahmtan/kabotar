@@ -33,7 +33,9 @@ export function postprocessMessage(trimmed: string): PostProcessResult {
 
   const slotMatch = trimmed.match(/^🎰([A-Za-z0-9_\-])$/);
   if (slotMatch) {
-    const diceInfo = (animEmojiMap as any)['🎰'] as { preview: string; outcomes: string[] } | undefined;
+    const diceInfo = (animEmojiMap as any)['🎰'] as
+      | { preview: string; outcomes: string[] }
+      | undefined;
     if (diceInfo) {
       const raw = decodeSlotChar(slotMatch[1]);
       if (raw >= 0) {
@@ -73,13 +75,19 @@ export function postprocessMessage(trimmed: string): PostProcessResult {
     const entry = (animEmojiMap as Record<string, unknown>)[trimmed];
     if (typeof entry === 'string') {
       animatedUrl = `${staticPrefix}${entry}`;
-    } else if (entry && typeof entry === 'object' && 'outcomes' in (entry as Record<string, unknown>)) {
+    } else if (
+      entry &&
+      typeof entry === 'object' &&
+      'outcomes' in (entry as Record<string, unknown>)
+    ) {
       animatedUrl = `${staticPrefix}${(entry as { preview: string }).preview}`;
     }
   }
 
   if (!animatedUrl) {
-    const diceInfo = (animEmojiMap as any)[trimmed] as { preview: string; outcomes: string[] } | undefined;
+    const diceInfo = (animEmojiMap as any)[trimmed] as
+      | { preview: string; outcomes: string[] }
+      | undefined;
     if (diceInfo) {
       animatedUrl = `${staticPrefix}${diceInfo.preview}`;
     } else {
@@ -101,6 +109,6 @@ export function postprocessMessage(trimmed: string): PostProcessResult {
     isSingleEmoji: !!animatedUrl,
     animatedUrl,
     isSlotMachine,
-    slotMachine,
+    slotMachine
   };
 }
